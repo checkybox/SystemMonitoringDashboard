@@ -1,0 +1,53 @@
+/* Custom light theme colors */
+:root {
+    --bg-dark-custom: rgb(235,235,235);
+    --bg-custom: rgb(245,245,245);
+    --bg-light-custom: rgb(255,255,255);
+}
+
+/* Custom dark theme colors */
+[data-bs-theme="dark"] {
+    --bg-dark-custom: rgb(30,30,30);
+    --bg-custom: rgb(20,20,20);
+    --bg-light-custom: rgb(40,40,40);
+}
+
+/* Set custom background colors */
+body {
+    background-color: var(--bg-custom) !important;
+}
+
+.bg-dark-custom {
+    background-color: var(--bg-dark-custom) !important;
+}
+
+.bg-custom {
+    background-color: var(--bg-custom) !important;
+}
+
+.bg-light-custom {
+    background-color: var(--bg-light-custom) !important;
+}
+
+/* Shadows */
+.shadow {
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px;
+}
+
+.shadow-89 {
+    box-shadow:
+            rgba(0, 0, 0, 0.4) 0px 2px 4px,
+            rgba(0, 0, 0, 0.3) 0px 7px 13px -3px,
+            rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+}
+
+/* Animated content */
+#title-animated {
+    position: relative;
+    top: 100px;
+    opacity: 0;
+}
+
+#temp-hidden {
+    opacity: 0;
+}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>System Monitoring Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- Collapsible navbar -->
+<div class="container-fluid mb-4 bg-dark-custom">
+    <nav class="navbar navbar-expand-md border-bottom">
+        <div class="container-fluid">
+            <img class="me-2" id="logo-animated" src="/assets/images/logo.png" width="48" height="48" alt="logo">
+            <a class="navbar-brand ms-2 fs-4 fw-light" href="/">System Monitoring Dashboard</a>
+            <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#Navbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="Navbar" class="navbar-collapse collapse">
+                <ul class="navbar-nav ms-auto fs-4">
+                    <li class="nav-item"><a class="nav-link active fw-light" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<!-- Dashboard description -->
+<div class="container my-4">
+    <div class="row">
+        <div class="col">
+            <div class="d-flex justify-content-center align-items-center flex-column" id="title-animated">
+                <h1 class="fs-1">System Monitoring Dashboard</h1>
+                <p class="fs-4 fw-light text-center">A minimal web-based dashboard for viewing system metrics such as CPU load, memory usage, uptime, and more.</p>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $("#title-animated").animate({
+        top: '0px',
+        opacity: '1',
+    }, 1000)
+</script>
+
+<!-- Main container -->
+<div class="container my-5" id="temp-hidden">
+
+    <!-- Planned features container -->
+    <div class="container p-5 bg-light-custom shadow" style="border-radius: 2rem;">
+        <h2 class="mb-5 text-center fw-light">Planned Features</h2>
+        <div class="row g-4">
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-cpu fs-1 mb-3"></i>
+                        <h5 class="card-title">CPU Monitoring</h5>
+                        <p class="card-text text-muted">Real-time CPU usage tracking with live graphs</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-memory fs-1 mb-3"></i>
+                        <h5 class="card-title">Memory Statistics</h5>
+                        <p class="card-text text-muted">Track RAM usage and memory allocation</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-pie-chart fs-1 mb-3"></i>
+                        <h5 class="card-title">Disk Usage Charts</h5>
+                        <p class="card-text text-muted">Visual donut charts for storage monitoring</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-wifi fs-1 mb-3"></i>
+                        <h5 class="card-title">Network Monitoring</h5>
+                        <p class="card-text text-muted">Track bandwidth and network activity</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-clock-history fs-1 mb-3"></i>
+                        <h5 class="card-title">System Uptime</h5>
+                        <p class="card-text text-muted">Display system uptime and boot information</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-list-task fs-1 mb-3"></i>
+                        <h5 class="card-title">Process Viewer</h5>
+                        <p class="card-text text-muted">View and manage running processes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-graph-up fs-1 mb-3"></i>
+                        <h5 class="card-title">Historical Charts</h5>
+                        <p class="card-text text-muted">View historical data trends over time</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-bell fs-1 mb-3"></i>
+                        <h5 class="card-title">Alerts & Notifications</h5>
+                        <p class="card-text text-muted">Get notified when thresholds are exceeded</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-moon-stars fs-1 mb-3"></i>
+                        <h5 class="card-title">Dark Mode</h5>
+                        <p class="card-text text-muted">Toggle between light and dark themes</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-hdd-network fs-1 mb-3"></i>
+                        <h5 class="card-title">Remote Monitoring</h5>
+                        <p class="card-text text-muted">Monitor remote machines through SSH</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-puzzle fs-1 mb-3"></i>
+                        <h5 class="card-title">Plugin System</h5>
+                        <p class="card-text text-muted">Extend functionality with custom plugins</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-89">
+                    <div class="card-body">
+                        <i class="bi bi-gear fs-1 mb-3"></i>
+                        <h5 class="card-title">Settings Page</h5>
+                        <p class="card-text text-muted">Customize dashboard preferences</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+<script>
+    setTimeout(function() {
+        $("#temp-hidden").animate({
+            opacity: '1',
+        }, 1000)
+    }, 1000)
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>
