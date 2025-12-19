@@ -25,6 +25,7 @@
                     <li class="nav-item"><a class="nav-link fw-light active" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
                 </ul>
             </div>
@@ -50,131 +51,9 @@
     }, 1000)
 </script>
 
-<!-- Planned features container -->
+<!-- Main container -->
 <div class="container my-4 temp-hidden">
-    <h2 class="mb-5 text-center fw-light">Planned Features</h2>
     <div class="row g-4">
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-cpu fs-1 mb-3"></i>
-                    <h5 class="card-title">CPU Monitoring</h5>
-                    <p class="card-text text-muted">Real-time CPU usage tracking with live graphs</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-memory fs-1 mb-3"></i>
-                    <h5 class="card-title">Memory Statistics</h5>
-                    <p class="card-text text-muted">Track RAM usage and memory allocation</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-pie-chart fs-1 mb-3"></i>
-                    <h5 class="card-title">Disk Usage Charts</h5>
-                    <p class="card-text text-muted">Visual donut charts for storage monitoring</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-wifi fs-1 mb-3"></i>
-                    <h5 class="card-title">Network Monitoring</h5>
-                    <p class="card-text text-muted">Track bandwidth and network activity</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-clock-history fs-1 mb-3"></i>
-                    <h5 class="card-title">System Uptime</h5>
-                    <p class="card-text text-muted">Display system uptime and boot information</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-list-task fs-1 mb-3"></i>
-                    <h5 class="card-title">Process Viewer</h5>
-                    <p class="card-text text-muted">View and manage running processes</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-graph-up fs-1 mb-3"></i>
-                    <h5 class="card-title">Historical Charts</h5>
-                    <p class="card-text text-muted">View historical data trends over time</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-bell fs-1 mb-3"></i>
-                    <h5 class="card-title">Alerts & Notifications</h5>
-                    <p class="card-text text-muted">Get notified when thresholds are exceeded</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-moon-stars fs-1 mb-3"></i>
-                    <h5 class="card-title">Dark Mode</h5>
-                    <p class="card-text text-muted">Toggle between light and dark themes</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-hdd-network fs-1 mb-3"></i>
-                    <h5 class="card-title">Remote Monitoring</h5>
-                    <p class="card-text text-muted">Monitor remote machines through SSH</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-puzzle fs-1 mb-3"></i>
-                    <h5 class="card-title">Plugin System</h5>
-                    <p class="card-text text-muted">Extend functionality with custom plugins</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
-                <div class="card-body">
-                    <i class="bi bi-gear fs-1 mb-3"></i>
-                    <h5 class="card-title">Settings Page</h5>
-                    <p class="card-text text-muted">Customize dashboard preferences</p>
-                </div>
-            </div>
-        </div>
-
         <div class="col-lg-6" style="display: flex; justify-content: center; align-items: center;">
 
             <div class="stats-left me-auto">
@@ -217,7 +96,6 @@
                     <strong>Disk usage:</strong>
                     <span id="disk-usage-test"></span>
                 </div>
-
             </div>
         </div>
     </div>

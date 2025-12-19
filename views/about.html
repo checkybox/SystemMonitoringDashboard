@@ -25,6 +25,7 @@
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light active" href="/about">About</a></li>
                 </ul>
             </div>
@@ -33,7 +34,7 @@
 </div>
 
 <!-- Team information -->
-<div class="container my-5 temp-hidden">
+<div class="container temp-hidden">
     <div class="row">
         <div class="col">
             <div class="d-flex justify-content-center align-items-center flex-column">
@@ -60,11 +61,11 @@
         </div>
 
         <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
+            <div class="card h-100 border-0 shadow-89 text-white bg-warning" style="background-color: #00c800;">
                 <div class="card-body">
                     <i class="bi bi-memory fs-1 mb-3"></i>
                     <h5 class="card-title">Memory Statistics</h5>
-                    <p class="card-text text-muted">Track RAM usage and memory allocation</p>
+                    <p class="card-text text-white">Track RAM usage and memory allocation</p>
                 </div>
             </div>
         </div>
@@ -90,11 +91,11 @@
         </div>
 
         <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-89">
+            <div class="card h-100 border-0 shadow-89 bg-warning text-white">
                 <div class="card-body">
                     <i class="bi bi-clock-history fs-1 mb-3"></i>
                     <h5 class="card-title">System Uptime</h5>
-                    <p class="card-text text-muted">Display system uptime and boot information</p>
+                    <p class="card-text text-white">Display system uptime and boot information</p>
                 </div>
             </div>
         </div>
@@ -166,15 +167,6 @@
                     <h5 class="card-title">Settings Page</h5>
                     <p class="card-text text-muted">Customize dashboard preferences</p>
                 </div>
-            </div>
-        </div>
-
-        <div class="col-lg-6">
-            <div class="stats">
-                <div>CPU Load: <span id="cpu"></span></div>
-                <div>Total Memory: <span id="totalMem"></span></div>
-                <div>Free Memory: <span id="freeMem"></span></div>
-                <div>Uptime: <span id="uptime"></span></div>
             </div>
         </div>
 

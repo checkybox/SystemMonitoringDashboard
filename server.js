@@ -4,8 +4,10 @@ const { exec } = require('child_process')
 
 const PORT = 3000
 const app = express()
+
 app.use(express.static('public'))
 app.use('/assets', express.static('assets'))
+app.use(express.urlencoded({ extended: true }))
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/views/index.html')
@@ -14,6 +16,15 @@ app.get('/', (req, res) => {
 app.get('/about', (req, res) => {
     res.sendFile(__dirname + '/views/about.html')
 })
+
+app.get('/contact', (req, res) => {
+    res.sendFile(__dirname + '/views/contact.html')
+})
+
+app.post('/contact', (req, res) => {
+    console.log(req.body);
+    res.send(`<h2>Thanks, ${req.body.name}! Your message has been received.</h2>`);
+});
 
 app.get('/api/static-stats', (req, res) => {
     const data = {
@@ -29,18 +40,11 @@ app.get('/api/static-stats', (req, res) => {
 
 app.get('/api/stats', (req, res) => {
     const data = {
-        arch: os.arch(),
-        cpus: os.cpus(),
         freeMem: os.freemem(),
         homedir: os.homedir(),
-        hostname: os.hostname(),
         cpuLoad: os.loadavg(),
         machine: os.machine(),
         networkInterfaces: os.networkInterfaces(),
-        release: os.release(),
-        version: os.version(), // trash
-        type: os.type(),
-        userInfo: os.userInfo(),
         totalMem: os.totalmem(),
         uptime: os.uptime(),
     }
@@ -90,6 +94,10 @@ app.get('/api/ls', (req, res) => {
         console.error(`stderr: ${err}`)
     })
     res.send('Executed ls -l command. Check server console for output.')
+})
+
+app.use((req, res) => {
+    res.status(404).sendFile(__dirname + '/views/404.html')
 })
 
 app.listen(PORT, () => {
