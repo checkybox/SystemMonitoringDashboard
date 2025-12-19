@@ -22,33 +22,27 @@
             </button>
             <div id="Navbar" class="navbar-collapse collapse">
                 <ul class="navbar-nav ms-auto fs-4">
-                    <li class="nav-item"><a class="nav-link fw-light active" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light active" href="/about">About</a></li>
                 </ul>
             </div>
         </div>
     </nav>
 </div>
 
-<!-- Dashboard description -->
-<div class="container my-4">
+<!-- Team information -->
+<div class="container my-5 temp-hidden">
     <div class="row">
         <div class="col">
-            <div class="d-flex justify-content-center align-items-center flex-column" id="title-animated">
-                <h1 class="fs-1">System Monitoring Dashboard</h1>
-                <p class="fs-4 fw-light text-center">A minimal web-based dashboard for viewing system metrics such as CPU load, memory usage, uptime, and more.</p>
+            <div class="d-flex justify-content-center align-items-center flex-column">
+                <h1 class="fs-1">Team information</h1>
+                <p class="fs-4 fw-light text-center">Vitaliy (SE-2423)</p>
             </div>
         </div>
     </div>
 </div>
-<script>
-    $("#title-animated").animate({
-        top: '0px',
-        opacity: '1',
-    }, 1000)
-</script>
 
 <!-- Planned features container -->
 <div class="container my-4 temp-hidden">
@@ -175,43 +169,12 @@
             </div>
         </div>
 
-        <div class="col-lg-6" style="display: flex; justify-content: center; align-items: center;">
-
-            <div class="stats-left me-auto">
-                <div>
-                    <strong><span id="username+hostname"></span></strong>
-                </div>
-                <div>
-                    <strong>OS:</strong>
-                    <span id="os+arch"></span>
-                </div>
-                <div>
-                    <strong>Kernel:</strong>
-                    <span id="kernel-version"></span>
-                </div>
-                <div>
-                    <strong>CPUs:</strong>
-                    <span id="cpu-info"></span>
-                </div>
-            </div>
-
-            <div class="stats-right">
-                <div>
-                    <strong>Total Memory: </strong>
-                    <span id="total-memory"></span>
-                </div>
-                <div>
-                    <strong>Free Memory: </strong>
-                    <span id="free-memory"></span>
-                </div>
-                <div>
-                    <strong>CPU Load: </strong>
-                    <span id="cpu-load"></span>
-                </div>
-                <div>
-                    <strong>Uptime:</strong>
-                    <span id="uptime"></span>
-                </div>
+        <div class="col-lg-6">
+            <div class="stats">
+                <div>CPU Load: <span id="cpu"></span></div>
+                <div>Total Memory: <span id="totalMem"></span></div>
+                <div>Free Memory: <span id="freeMem"></span></div>
+                <div>Uptime: <span id="uptime"></span></div>
             </div>
         </div>
 
@@ -222,9 +185,9 @@
     setTimeout(function() {
         $(".temp-hidden").animate({
             opacity: '1',
-        }, 1000)
+        }, 0)
         // $("html").css("background-color", "var(--bg-dark-custom)") // Change overscroll background color to match header and footer
-    }, 1000)
+    }, 0)
 </script>
 <script src="/script.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>

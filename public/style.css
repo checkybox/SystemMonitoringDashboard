@@ -41,6 +41,10 @@ body {
             rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
 }
 
+.border-radius-2rem {
+    border-radius: 2rem;
+}
+
 /* Animated content */
 #title-animated {
     position: relative;
@@ -48,6 +52,6 @@ body {
     opacity: 0;
 }
 
-#temp-hidden {
+.temp-hidden {
     opacity: 0;
 }
