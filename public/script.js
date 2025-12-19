@@ -17,10 +17,6 @@ async function loadStats() {
     const uptime_seconds = Math.floor(data.uptime % 60)
     const formattedUptime = `${uptime_hours}h ${uptime_minutes}m ${uptime_seconds}s`
 
-    // document.getElementById('username+hostname').textContent = data.userInfo.username + "@" + data.hostname
-    // document.getElementById('os+arch').textContent = data.type + " " + "(" + data.arch + ")"
-    // document.getElementById('kernel-version').textContent = data.release
-    // document.getElementById('cpu-info').textContent = data.cpus[0].model
     document.getElementById('total-memory').textContent = (data.totalMem / 1024 / 1024 / 1024).toFixed(2) + ' GB'
     document.getElementById('free-memory').textContent = (data.freeMem / 1024 / 1024 / 1024).toFixed(2) + ' GB'
     document.getElementById('cpu-load').textContent = data.cpuLoad.join(', ')
@@ -41,14 +37,35 @@ async function getDiskUsage() {
     const lines = data.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0)
 
     // store for later use and return
-    window.diskUsageLines = lines
     console.log(data)
-    return lines
+    document.getElementById('disk-usage-test').textContent = lines[1]
+}
+
+async function getFreeMemory() {
+    try {
+        const res = await fetch('/api/free')
+        const data = await res.text()
+
+        // split into non-empty trimmed lines and into cells
+        const lines = data.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+        const lineContents = lines.map(line => line.split(/\s+/))
+
+        document.getElementById('free-memory-header-span').textContent = lineContents[0].join(' ')
+        document.getElementById('free-memory-body-span').textContent = lineContents[1].join(' ')
+
+        return lineContents
+    } catch (err) {
+        console.error('Failed to fetch/parse free output', err)
+        return []
+    }
 }
 
 loadStaticStats()
 loadStats()
 getOsRelease()
-getDiskUsage()
-setInterval(loadStats, 1000) // auto-refresh every 1 second
 
+setInterval(loadStats, 1000) // auto-refresh every 1 second
+setInterval(getFreeMemory, 1000)
+
+getDiskUsage()
+getFreeMemory()

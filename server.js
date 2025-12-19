@@ -69,6 +69,17 @@ app.get('/api/disk-usage', (req, res) => {
     })
 })
 
+app.get('/api/free', (req, res) => {
+    exec('free -h', (err, stdout) => {
+        if (err) {
+            console.error(err)
+            res.status(500).send('Error executing command')
+            return;
+        }
+        res.send(stdout)
+    })
+})
+
 app.get('/api/ls', (req, res) => {
     exec('ls -l', (err, stdout) => {
         if (err) {
