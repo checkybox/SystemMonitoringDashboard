@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Search Results</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<!-- Collapsible navbar -->
+<div class="container-fluid mb-4 bg-dark-custom">
+    <nav class="navbar navbar-expand-md border-bottom">
+        <div class="container-fluid">
+            <img class="me-2" id="logo-animated" src="/assets/images/logo.png" width="48" height="48" alt="logo">
+            <a class="navbar-brand ms-2 fs-4 fw-light" href="/">System Monitoring Dashboard</a>
+            <button class="navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#Navbar">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="Navbar" class="navbar-collapse collapse">
+                <ul class="navbar-nav ms-auto fs-4">
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<!-- Search Results -->
+<div class="container my-4">
+    <h1>Search Results</h1>
+    <p class="fs-4">You searched for: <strong id="search-query"></strong></p>
+    <p class="text-muted">This is a placeholder search page. In the future, this will search through system metrics, logs, or other project data.</p>
+    <a href="/" class="btn btn-primary">Back to Home</a>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script>
+    // Get query parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const query = urlParams.get('q');
+    if (query) {
+        document.getElementById('search-query').textContent = query;
+    }
+</script>
+</body>
+</html>
+
