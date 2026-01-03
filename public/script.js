@@ -36,28 +36,14 @@ async function getDiskUsage() {
     // split on newlines, trim each line, remove empty lines
     const lines = data.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0)
 
+    // for indices 0 and 1 of "lines", split each element by whitespace and put them into new arrays
+    const diskHeader = lines[0] ? lines[0].split(/\s+/) : []
+    const diskBody = lines[1] ? lines[1].split(/\s+/) : []
+
     // store for later use and return
-    console.log(data)
-    document.getElementById('disk-usage-test').textContent = lines[1]
-}
+    console.log({ raw: data, lines, diskHeader, diskBody })
 
-async function getFreeMemory() {
-    try {
-        const res = await fetch('/api/free')
-        const data = await res.text()
-
-        // split into non-empty trimmed lines and into cells
-        const lines = data.split(/\r?\n/).map(l => l.trim()).filter(Boolean)
-        const lineContents = lines.map(line => line.split(/\s+/))
-
-        document.getElementById('free-memory-header-span').textContent = lineContents[0].join(' ')
-        document.getElementById('free-memory-body-span').textContent = lineContents[1].join(' ')
-
-        return lineContents
-    } catch (err) {
-        console.error('Failed to fetch/parse free output', err)
-        return []
-    }
+    document.getElementById('disk-usage-test').textContent = "Size: " + diskBody[1] + ", Used: " + diskBody[2] + ", Avail: " + diskBody[3] + ", Usage: " + diskBody[4]
 }
 
 loadStaticStats()
@@ -65,7 +51,5 @@ loadStats()
 getOsRelease()
 
 setInterval(loadStats, 1000) // auto-refresh every 1 second
-setInterval(getFreeMemory, 1000)
 
 getDiskUsage()
-getFreeMemory()

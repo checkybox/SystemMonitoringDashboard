@@ -6,6 +6,17 @@ A minimal web-based dashboard for viewing system metrics such as CPU load, memor
 
 - Vitaliy Golubenko (SE-2423)
 
+## Team member contributions
+
+### Vitaliy Golubenko
+- Implemented Express.js server with routing and middleware
+- Created all HTML pages (home, about, contact, 404)
+- Developed API endpoints for system monitoring
+- Implemented contact form with server-side validation and JSON file storage
+- Added search and item detail routes with parameter handling
+- Integrated Bootstrap for responsive UI design
+- Set up custom logger middleware
+
 ## Project roadmap
 
 - Week 1
@@ -15,31 +26,115 @@ A minimal web-based dashboard for viewing system metrics such as CPU load, memor
     - API endpoints for system metrics
     - Frontend for basic statistics display
     - Contact form and about page
+- Week 3-4
+    - Custom logger middleware
+    - Query parameter handling (/search)
+    - Route parameter handling (/item/:id)
+    - Server-side validation with proper HTTP status codes
+    - Contact form data saving to JSON file
+    - JSON API endpoint for project information
 
 ## Routes
 
-- GET / — Home (main page with intro and navigation)
-- GET /about — Short info about the team/project
-- GET /contact — Contact page (contains an HTML form)
-- POST /contact — Form submission handler (server logs the form data and responds with a thank-you message)
+### Page Routes
 
-API endpoints (examples used by the UI):
+- **GET /** — Home page with system overview and navigation
+  - Displays real-time system metrics
+  - Shows CPU, memory, uptime, and disk usage
+  
+- **GET /about** — About page with team information and planned features
+  - Team member details
+  - Future feature roadmap displayed as Bootstrap cards
+  
+- **GET /contact** — Contact form page
+  - HTML form with name, email, and message fields
+  - Client-side and server-side validation
+  
+- **GET /search?q=QUERY** — Search results page (uses query parameter)
+  - Requires query parameter `q`
+  - Returns 400 error if `q` is missing
+  - Placeholder for future search functionality
+  
+- **GET /item/:id** — Item detail page (uses route parameter)
+  - Displays details for a specific item ID
+  - Captures route parameter from URL
+  - Placeholder for future machine/process details
 
-- GET /api/free — Runs `free -h` on the server and returns the output (used to display memory stats)
-- GET /api/disk-usage — Runs `df -h` on the server and returns disk usage statistics as text
-- GET /api/os-release — Returns the contents of `/etc/os-release`
-- GET /api/static-stats — JSON with static system info (hostname, platform, architecture, etc.)
-- GET /api/stats — JSON with various OS stats (cpus, memory, uptime, etc.)
+### Form Handling
+
+- **POST /contact** — Contact form submission handler
+  - Validates required fields (name, email, message)
+  - Returns 400 error if any field is missing
+  - Saves submission to `contact-submissions.json` using `fs.writeFile()`
+  - Returns thank-you message on success
+
+### API Endpoints (JSON)
+
+- **GET /api/info** — Returns project information in JSON format
+  - Project name, version, description
+  - Complete list of available routes
+  - Author information
+  
+- **GET /api/static-stats** — Static system information as JSON
+  - Architecture, hostname, OS type
+  - CPU information
+  - User information
+  
+- **GET /api/stats** — Dynamic system statistics as JSON
+  - Free/total memory
+  - CPU load averages
+  - System uptime
+  - Network interfaces
+  
+- **GET /api/os-release** — OS release information as plain text
+  - Contents of `/etc/os-release` file
+  
+- **GET /api/disk-usage** — Disk usage statistics as plain text
+  - Output of `df -h` command
+  
+- **GET /api/free** — Memory usage information as plain text
+  - Output of `free -h` command
+
+### Error Handling
+
+- **404** — Not Found
+  - Custom 404 page for undefined routes
+  - Consistent navigation and branding
+
+## Middleware
+
+The application uses the following middleware:
+
+1. **Custom Logger Middleware** — Logs all incoming requests
+   - Format: `[timestamp] METHOD URL`
+   - Runs before all routes
+   
+2. **express.static('public')** — Serves static files (CSS, JS)
+   
+3. **express.static('assets')** — Serves assets like images at `/assets` path
+   
+4. **express.urlencoded({ extended: true })** — Parses URL-encoded form data
+   
+5. **express.json()** — Parses JSON request bodies
 
 ## Contact form details
 
 The contact form (served at `/contact`) includes the following fields and submits to `POST /contact`:
 
-- name (text input)
-- email (email input)
-- message (textarea)
+- **name** (text input) — Required
+- **email** (email input) — Required
+- **message** (textarea) — Required
 
-On submit the server receives URL-encoded form data and (in the current implementation) prints it to the server console and returns a small thank-you HTML response.
+### Server-side validation:
+- All fields are validated on the server
+- Missing fields return HTTP 400 status with error message
+- Valid submissions are saved to `contact-submissions.json` with timestamp
+
+### Data storage:
+- Contact submissions are saved to `contact-submissions.json` in the project root
+- Each submission includes: name, email, message, and ISO timestamp
+- Uses `fs.writeFile()` to persist data
+- File is created automatically if it doesn't exist
 
 ## Installation
 
