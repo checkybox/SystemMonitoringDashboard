@@ -1,11 +1,61 @@
-const express = require('express')
-const os = require('os')
-const { exec } = require('child_process')
-const fs = require('fs')
-const path = require('path')
+// const express = require('express')
+// const os = require('os')
+// const { exec } = require('child_process')
+// const fs = require('fs')
+// const path = require('path')
+//
+// // Database
+// const mongoose = require('mongoose')
+// const dotenv = require('dotenv')
 
-const PORT = 3000
+import express from 'express';
+import os from 'os';
+import { exec } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+
+// Database
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
 const app = express()
+dotenv.config()
+
+app.use(express.urlencoded({ extended: true }))
+app.use(express.json())
+
+const PORT = process.env.PORT || 3000
+const MONGO_URL = process.env.MONGO_URL
+
+async function main() {
+    await mongoose.connect(MONGO_URL)
+    console.log("MongoDB connected")
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`)
+    })
+}
+
+main().catch(err => console.log(err))
+
+const metricsSchema = new mongoose.Schema({
+    cpuLoad: [Number],
+    freeMem: Number,
+    totalMem: Number,
+    uptime: Number,
+    timestamp: { type: Date, default: Date.now }
+})
+
+const Metrics = mongoose.model('Metrics', metricsSchema)
+
+const newMetrics = new Metrics({
+    cpuLoad: os.loadavg(),
+    freeMem: os.freemem(),
+    totalMem: os.totalmem(),
+    uptime: os.uptime(),
+    timestamp: new Date()
+})
+
+await newMetrics.save().then(() => console.log("New metrics saved"))
 
 // logger middleware
 app.use((req, res, next) => {
@@ -15,8 +65,6 @@ app.use((req, res, next) => {
 
 app.use(express.static('public')) // expose public directory
 app.use('/assets', express.static('assets')) // expose assets directory on mount point /assets
-app.use(express.urlencoded({ extended: true })) // middleware to handle form submissions
-app.use(express.json()) // middleware to parse JSON bodies
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/views/index.html')
@@ -143,6 +191,17 @@ app.get('/api/stats', (req, res) => {
         totalMem: os.totalmem(),
         uptime: os.uptime(),
     }
+
+    const metrics = new Metrics({
+        cpuLoad: data.cpuLoad,
+        freeMem: data.freeMem,
+        totalMem: data.totalMem,
+        uptime: data.uptime,
+        timestamp: new Date()
+    })
+
+    metrics.save().then(() => console.log("Metrics saved to database"))
+
     res.json(data)
 })
 
@@ -193,8 +252,4 @@ app.get('/api/ls', (req, res) => {
 
 app.use((req, res) => {
     res.status(404).sendFile(__dirname + '/views/404.html')
-})
-
-app.listen(PORT, () => {
-    console.log('Server running on http://localhost:3000')
 })
