@@ -156,7 +156,14 @@ cd SystemMonitoringDashboard
 npm install
 ```
 
-4. Run the server
+4. Create and populate `.env` file, for example:
+
+```
+PORT=3000
+MONGO_URL="mongodb://localhost:27017/yourdbname"
+```
+
+5. Run the server
 
 ```
 node server.js
