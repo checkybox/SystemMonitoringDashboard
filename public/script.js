@@ -5,7 +5,10 @@ async function loadStaticStats() {
     document.getElementById('username+hostname').textContent = data.userInfo.username + "@" + data.hostname
     document.getElementById('os+arch').textContent = data.type + " " + "(" + data.arch + ")"
     document.getElementById('kernel-version').textContent = data.release
-    document.getElementById('cpu-info').textContent = data.cpus[0].model
+
+    const cpuElement = document.getElementById('cpu-info')
+    cpuElement.textContent = data.cpus[0].model
+    cpuElement.title = data.cpus[0].model // Show full name on hover
 }
 
 async function loadStats() {
@@ -17,11 +20,302 @@ async function loadStats() {
     const uptime_seconds = Math.floor(data.uptime % 60)
     const formattedUptime = `${uptime_hours}h ${uptime_minutes}m ${uptime_seconds}s`
 
-    document.getElementById('total-memory').textContent = (data.totalMem / 1024 / 1024 / 1024).toFixed(2) + ' GB'
-    document.getElementById('free-memory').textContent = (data.freeMem / 1024 / 1024 / 1024).toFixed(2) + ' GB'
-    document.getElementById('cpu-load').textContent = data.cpuLoad.join(', ')
+    const totalMemGB = (data.totalMem / 1024 / 1024 / 1024).toFixed(2)
+    const freeMemGB = (data.freeMem / 1024 / 1024 / 1024).toFixed(2)
+    const usedMemGB = (totalMemGB - freeMemGB).toFixed(2)
+
+    document.getElementById('total-memory').textContent = totalMemGB + ' GB'
+    document.getElementById('used-memory').textContent = usedMemGB + ' GB'
+    document.getElementById('free-memory').textContent = freeMemGB + ' GB'
     document.getElementById('uptime').textContent = formattedUptime
+
+    // Update load average
+    const cpuLoad = data.cpuLoad;
+    document.getElementById('load-1min').textContent = cpuLoad[0].toFixed(2)
+    document.getElementById('load-5min').textContent = cpuLoad[1].toFixed(2)
+    document.getElementById('load-15min').textContent = cpuLoad[2].toFixed(2)
 }
+
+// Store previous network stats for speed calculation
+let previousNetworkStats = null;
+let lastNetworkStatsTime = null;
+
+// Store previous CPU stats for usage calculation
+let previousCpuStats = null;
+
+async function loadCpuPerCore() {
+    try {
+        const res = await fetch('/api/cpu-per-core');
+        const currentStats = await res.json();
+
+        if (previousCpuStats) {
+            displayCpuBars(currentStats, previousCpuStats);
+        }
+
+        previousCpuStats = currentStats;
+    } catch (error) {
+        console.error('Error loading CPU stats:', error);
+        document.getElementById('cpu-bars-container').innerHTML = '<p class="text-muted">Error loading CPU data</p>';
+    }
+}
+
+function displayCpuBars(currentStats, previousStats) {
+    const container = document.getElementById('cpu-bars-container');
+
+    if (!currentStats || currentStats.length === 0) {
+        container.innerHTML = '<p class="text-muted">No CPU data available</p>';
+        return;
+    }
+
+    // Calculate total CPU usage and per-core usages
+    let totalUsage = 0;
+    const usages = [];
+
+    currentStats.forEach((current, index) => {
+        const previous = previousStats[index];
+        if (!previous) {
+            usages.push(0);
+            return;
+        }
+
+        // Calculate total time difference
+        const prevTotal = Object.values(previous.times).reduce((a, b) => a + b, 0);
+        const currTotal = Object.values(current.times).reduce((a, b) => a + b, 0);
+        const totalDelta = currTotal - prevTotal;
+
+        // Calculate idle time difference
+        const idleDelta = current.times.idle - previous.times.idle;
+
+        // Calculate usage percentage
+        const usage = totalDelta > 0 ? ((totalDelta - idleDelta) / totalDelta) * 100 : 0;
+        usages.push(usage);
+        totalUsage += usage;
+    });
+
+    const avgUsage = usages.length > 0 ? totalUsage / usages.length : 0;
+    const avgUsagePercent = Math.min(100, Math.max(0, avgUsage)).toFixed(1);
+
+    // Determine color for total usage bar
+    let totalBarColor = 'bg-success';
+    if (avgUsage > 80) {
+        totalBarColor = 'bg-danger';
+    } else if (avgUsage > 50) {
+        totalBarColor = 'bg-warning';
+    }
+
+    // Check if we need to create the initial structure
+    const needsInit = !container.querySelector('.cpu-bar-row');
+
+    if (needsInit) {
+        // Create total CPU usage bar at the top
+        let html = `
+            <div class="mb-3 pb-3 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-bold">Total CPU Load</span>
+                    <span class="fw-bold cpu-total-percent">0.0%</span>
+                </div>
+                <div class="progress" style="height: 24px; border-radius: 12px;">
+                    <div class="progress-bar cpu-total-bar bg-success" role="progressbar"
+                         style="width: 0%; transition: width 0.8s ease-in-out, background-color 0.3s ease;"
+                         aria-valuenow="0"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+            <div class="row g-3">
+        `;
+
+        // Create columns with per-core bars
+        // We want 3 columns with 4 CPUs each, filling columns first
+        const numCols = 3;
+        const numRows = Math.ceil(currentStats.length / numCols);
+
+        // Create columns first
+        for (let col = 0; col < numCols; col++) {
+            html += '<div class="col-4">';
+
+            // Fill each column with CPUs
+            for (let row = 0; row < numRows; row++) {
+                const cpuIndex = col * numRows + row;
+                if (cpuIndex < currentStats.length) {
+                    const current = currentStats[cpuIndex];
+                    html += `
+                        <div class="cpu-bar-row" data-cpu="${current.name}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="cpu-label">${current.name.toUpperCase()}</small>
+                                <small class="cpu-percent">0.0%</small>
+                            </div>
+                            <div class="progress cpu-progress-bar">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: 0%" 
+                                     aria-valuenow="0" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            html += '</div>';
+        }
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    // Update total CPU usage bar
+    const totalPercentElement = container.querySelector('.cpu-total-percent');
+    const totalBarElement = container.querySelector('.cpu-total-bar');
+
+    if (totalPercentElement && totalBarElement) {
+        totalPercentElement.textContent = `${avgUsagePercent}%`;
+        totalBarElement.style.width = `${avgUsagePercent}%`;
+        totalBarElement.setAttribute('aria-valuenow', avgUsagePercent);
+        totalBarElement.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+        totalBarElement.classList.add(totalBarColor);
+    }
+
+    // Update existing per-core bars
+    currentStats.forEach((current, index) => {
+        const usage = usages[index];
+        if (usage === undefined) return;
+
+        const usagePercent = Math.min(100, Math.max(0, usage)).toFixed(1);
+
+        // Determine color based on usage
+        let barColor = 'bg-success'; // Green for low usage
+        if (usage > 80) {
+            barColor = 'bg-danger'; // Red for high usage
+        } else if (usage > 50) {
+            barColor = 'bg-warning'; // Yellow for medium usage
+        }
+
+        // Find the bar element
+        const barRow = container.querySelector(`[data-cpu="${current.name}"]`);
+        if (barRow) {
+            // Update percentage text
+            const percentElement = barRow.querySelector('.cpu-percent');
+            if (percentElement) {
+                percentElement.textContent = `${usagePercent}%`;
+            }
+
+            // Update progress bar
+            const progressBar = barRow.querySelector('.progress-bar');
+            if (progressBar) {
+                // Update width (this will animate with CSS transition)
+                progressBar.style.width = `${usagePercent}%`;
+                progressBar.setAttribute('aria-valuenow', usagePercent);
+
+                // Update color classes
+                progressBar.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                progressBar.classList.add(barColor);
+            }
+        }
+    });
+}
+
+async function loadNetworkStats() {
+    try {
+        const res = await fetch('/api/network-stats');
+        const currentStats = await res.json();
+        const currentTime = Date.now();
+
+        displayNetworkStats(currentStats, currentTime);
+
+        // Store current stats for next calculation
+        previousNetworkStats = currentStats;
+        lastNetworkStatsTime = currentTime;
+    } catch (error) {
+        console.error('Error loading network stats:', error);
+        document.getElementById('network-interfaces').innerHTML = '<p class="text-muted">Error loading network statistics</p>';
+    }
+}
+
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 B';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function displayNetworkStats(currentStats, currentTime) {
+    const container = document.getElementById('network-interfaces');
+
+    if (!currentStats || Object.keys(currentStats).length === 0) {
+        container.innerHTML = '<p class="text-muted">No network interfaces found</p>';
+        return;
+    }
+
+    let html = '';
+
+    for (const [interfaceName, stats] of Object.entries(currentStats)) {
+        // Calculate speeds if we have previous data
+        let rxSpeed = 0;
+        let txSpeed = 0;
+
+        if (previousNetworkStats && previousNetworkStats[interfaceName] && lastNetworkStatsTime) {
+            const timeDiff = (currentTime - lastNetworkStatsTime) / 1000; // seconds
+            const rxDiff = stats.rxBytes - previousNetworkStats[interfaceName].rxBytes;
+            const txDiff = stats.txBytes - previousNetworkStats[interfaceName].txBytes;
+
+            rxSpeed = rxDiff / timeDiff;
+            txSpeed = txDiff / timeDiff;
+        }
+
+        html += `
+            <div class="mb-4 pb-3 border-bottom">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-ethernet me-2"></i>${interfaceName}
+                </h6>
+                <div class="row">
+                    <div class="col-12 col-md-6">
+                        <div class="metric-row">
+                            <span class="metric-label">
+                                <i class="bi bi-download metric-icon"></i>
+                                Download
+                            </span>
+                            <span class="metric-value">${formatBytes(rxSpeed)}/s</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">
+                                <i class="bi bi-arrow-down-circle metric-icon"></i>
+                                Total RX
+                            </span>
+                            <span class="metric-value">${formatBytes(stats.rxBytes)}</span>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <div class="metric-row">
+                            <span class="metric-label">
+                                <i class="bi bi-upload metric-icon"></i>
+                                Upload
+                            </span>
+                            <span class="metric-value">${formatBytes(txSpeed)}/s</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">
+                                <i class="bi bi-arrow-up-circle metric-icon"></i>
+                                Total TX
+                            </span>
+                            <span class="metric-value">${formatBytes(stats.txBytes)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
 
 async function getOsRelease() {
     const res = await fetch('/api/os-release')
@@ -43,11 +337,26 @@ async function getDiskUsage() {
     // store for later use and return
     console.log({ raw: data, lines, diskHeader, diskBody })
 
-    document.getElementById('disk-usage-test').textContent = "Size: " + diskBody[1] + ", Used: " + diskBody[2] + ", Avail: " + diskBody[3] + ", Usage: " + diskBody[4]
+    // Populate individual disk metrics
+    document.getElementById('disk-size').textContent = diskBody[1] || 'N/A'
+    document.getElementById('disk-used').textContent = diskBody[2] || 'N/A'
+    document.getElementById('disk-available').textContent = diskBody[3] || 'N/A'
+    document.getElementById('disk-usage-percent').textContent = diskBody[4] || 'N/A'
 }
 
 loadStaticStats()
 loadStats()
 getOsRelease()
 getDiskUsage()
+loadNetworkStats()
+loadCpuPerCore()
+
 setInterval(loadStats, 1000) // auto-refresh every 1 second
+setInterval(loadNetworkStats, 1000) // update network stats every 1 second
+setInterval(loadCpuPerCore, 1000) // update CPU per-core stats every 1 second
+
+// Initialize Bootstrap tooltips
+document.addEventListener('DOMContentLoaded', function() {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+})

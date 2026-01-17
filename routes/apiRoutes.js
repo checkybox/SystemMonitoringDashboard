@@ -11,6 +11,17 @@ const metricsSchema = new mongoose.Schema({
     freeMem: Number,
     totalMem: Number,
     uptime: Number,
+    networkInterfaces: {
+        type: Map,
+        of: [{
+            address: String,
+            netmask: String,
+            family: String,
+            mac: String,
+            internal: Boolean,
+            cidr: String
+        }]
+    },
     timestamp: { type: Date, default: Date.now }
 });
 
@@ -76,29 +87,28 @@ router.get('/static-stats', (req, res) => {
 
 // Dynamic system stats (saves to database)
 router.get('/stats', (req, res) => {
-    const data = {
-        freeMem: os.freemem(),
-        homedir: os.homedir(),
-        cpuLoad: os.loadavg(),
-        machine: os.machine(),
-        networkInterfaces: os.networkInterfaces(),
-        totalMem: os.totalmem(),
-        uptime: os.uptime(),
-    };
+    const allInterfaces = os.networkInterfaces();
 
-    console.log(data.networkInterfaces)
+    // Filter interfaces by name (enp8s, tailscale, wlan)
+    const filteredInterfaces = {};
+    Object.keys(allInterfaces).forEach(name => {
+        if (name.includes('enp8s') || name.includes('tailscale') || name.includes('wlan')) {
+            filteredInterfaces[name] = allInterfaces[name];
+        }
+    });
 
     const metrics = new Metrics({
-        cpuLoad: data.cpuLoad,
-        freeMem: data.freeMem,
-        totalMem: data.totalMem,
-        uptime: data.uptime,
+        cpuLoad: os.loadavg(),
+        freeMem: os.freemem(),
+        totalMem: os.totalmem(),
+        uptime: os.uptime(),
+        networkInterfaces: filteredInterfaces,
         timestamp: new Date()
     });
 
     metrics.save().then(() => console.log("Metrics saved to database"));
 
-    res.json(data);
+    res.json(metrics)
 });
 
 // OS release information
@@ -122,6 +132,82 @@ router.get('/disk-usage', (req, res) => {
             return;
         }
         res.send(stdout);
+    });
+});
+
+// Network statistics from /proc/net/dev
+router.get('/network-stats', (req, res) => {
+    exec('cat /proc/net/dev', (err, stdout) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error reading network statistics' });
+            return;
+        }
+
+        // Parse the output
+        const lines = stdout.split('\n');
+        const stats = {};
+
+        // Skip first 2 header lines
+        for (let i = 2; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const parts = line.split(/\s+/);
+            const interfaceName = parts[0].replace(':', '');
+
+            // Filter for specific interfaces
+            if (interfaceName.includes('enp8s') || interfaceName.includes('tailscale') || interfaceName.includes('wlan')) {
+                stats[interfaceName] = {
+                    rxBytes: parseInt(parts[1]),
+                    rxPackets: parseInt(parts[2]),
+                    txBytes: parseInt(parts[9]),
+                    txPackets: parseInt(parts[10])
+                };
+            }
+        }
+
+        res.json(stats);
+    });
+});
+
+// Per-core CPU usage from /proc/stat
+router.get('/cpu-per-core', (req, res) => {
+    exec('cat /proc/stat', (err, stdout) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Error reading CPU statistics' });
+            return;
+        }
+
+        const lines = stdout.split('\n');
+        const cpuData = [];
+
+        for (const line of lines) {
+            if (line.startsWith('cpu') && line !== lines[0]) { // Skip the first 'cpu' line (aggregate)
+                const parts = line.split(/\s+/);
+                const cpuName = parts[0];
+
+                // Parse CPU times: user, nice, system, idle, iowait, irq, softirq, steal
+                const times = {
+                    user: parseInt(parts[1]) || 0,
+                    nice: parseInt(parts[2]) || 0,
+                    system: parseInt(parts[3]) || 0,
+                    idle: parseInt(parts[4]) || 0,
+                    iowait: parseInt(parts[5]) || 0,
+                    irq: parseInt(parts[6]) || 0,
+                    softirq: parseInt(parts[7]) || 0,
+                    steal: parseInt(parts[8]) || 0
+                };
+
+                cpuData.push({
+                    name: cpuName,
+                    times: times
+                });
+            }
+        }
+
+        res.json(cpuData);
     });
 });
 

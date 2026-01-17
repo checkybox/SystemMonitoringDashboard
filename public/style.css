@@ -63,3 +63,251 @@ body {
 .temp-hidden {
     opacity: 0;
 }
+
+/* Theme toggle button */
+#theme-toggle {
+    padding: 0.5rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+#theme-toggle:hover {
+    transform: scale(1.1);
+}
+
+#theme-toggle i {
+    font-size: 1.2rem;
+}
+
+/* Floating card styles */
+.card-floating {
+    background-color: var(--bg-light-custom);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] .card-floating {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.card-floating:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme="dark"] .card-floating:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Card header styles */
+.card-header-custom {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme="dark"] .card-header-custom {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Metric row styles */
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    gap: 1rem;
+}
+
+[data-bs-theme="dark"] .metric-row {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.metric-row:last-child {
+    border-bottom: none;
+}
+
+.metric-label {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+[data-bs-theme="dark"] .metric-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.metric-value {
+    font-family: 'Courier New', monospace;
+    color: rgba(0, 0, 0, 0.9);
+    font-size: 1rem;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.metric-value[title] {
+    cursor: help;
+}
+
+[data-bs-theme="dark"] .metric-value {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Icon styles for metrics */
+.metric-icon {
+    font-size: 1.25rem;
+    margin-right: 0.75rem;
+    color: rgba(0, 0, 0, 0.6);
+    flex-shrink: 0;
+}
+
+[data-bs-theme="dark"] .metric-icon {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Network interfaces specific styles */
+#network-interfaces h6 {
+    font-size: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+    display: inline-block;
+}
+
+[data-bs-theme="dark"] #network-interfaces h6 {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+#network-interfaces .border-bottom:last-child {
+    border-bottom: none !important;
+}
+
+#network-interfaces .metric-row {
+    border-bottom: none;
+    padding: 0.5rem 0;
+}
+
+/* CPU progress bars */
+.cpu-bar-row {
+    margin-bottom: 0.5rem;
+}
+
+.cpu-progress-bar {
+    height: 16px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+[data-bs-theme="dark"] .cpu-progress-bar {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.cpu-progress-bar .progress-bar {
+    transition: width 0.8s ease-in-out, background-color 0.3s ease;
+    border-radius: 8px;
+}
+
+.cpu-label {
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    color: rgba(0, 0, 0, 0.7);
+    font-size: 0.75rem;
+}
+
+[data-bs-theme="dark"] .cpu-label {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.cpu-percent {
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    color: rgba(0, 0, 0, 0.9);
+    font-size: 0.75rem;
+}
+
+[data-bs-theme="dark"] .cpu-percent {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Bootstrap progress bar colors with smooth transitions */
+.progress-bar.bg-success {
+    background-color: #28a745 !important;
+}
+
+.progress-bar.bg-warning {
+    background-color: #ffc107 !important;
+}
+
+.progress-bar.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+/* Info button styling */
+.btn-outline-secondary.rounded-circle {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary.rounded-circle {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-outline-secondary.rounded-circle:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary.rounded-circle:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .card-floating {
+        padding: 1.5rem;
+    }
+
+    .metric-label, .metric-value {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-floating {
+        padding: 1rem;
+    }
+
+    .metric-label {
+        font-size: 0.85rem;
+    }
+
+    .metric-value {
+        font-size: 0.85rem;
+    }
+
+    .metric-icon {
+        font-size: 1.2rem;
+        margin-right: 0.5rem;
+    }
+}
+

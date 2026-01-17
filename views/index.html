@@ -27,6 +27,11 @@
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
+                    <li class="nav-item">
+                        <button id="theme-toggle" class="btn btn-link nav-link fw-light" onclick="toggleTheme()" aria-label="Toggle theme">
+                            <i class="bi bi-moon-fill"></i>
+                        </button>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -52,50 +57,180 @@
 </script>
 
 <!-- Main container -->
-<div class="container my-4 temp-hidden">
+<div class="container my-5 temp-hidden">
 
-    <div class="row g-4">
-        <div class="col-lg-12" style="display: flex; justify-content: left; align-items: center;">
-
-            <div class="stats-left me-5">
-                <div>
-                    <strong><span id="username+hostname"></span></strong>
+    <!-- Metrics Row -->
+    <div class="row g-4 mb-4">
+        <!-- Static System Information Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card-floating">
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-person-badge metric-icon"></i>
+                        User & Host
+                    </span>
+                    <span class="metric-value" id="username+hostname">Loading...</span>
                 </div>
-                <div>
-                    <strong>OS:</strong>
-                    <span id="os+arch"></span>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-ubuntu metric-icon"></i>
+                        Operating System
+                    </span>
+                    <span class="metric-value" id="os+arch">Loading...</span>
                 </div>
-                <div>
-                    <strong>Kernel:</strong>
-                    <span id="kernel-version"></span>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-gear-fill metric-icon"></i>
+                        Kernel Version
+                    </span>
+                    <span class="metric-value" id="kernel-version">Loading...</span>
                 </div>
-                <div>
-                    <strong>CPU:</strong>
-                    <span id="cpu-info"></span>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-cpu metric-icon"></i>
+                        Processor
+                    </span>
+                    <span class="metric-value" id="cpu-info">Loading...</span>
                 </div>
             </div>
+        </div>
 
-            <div class="stats-right">
-                <div>
-                    <strong>Total Memory: </strong>
-                    <span id="total-memory"></span>
+        <!-- Dynamic Metrics Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card-floating">
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-memory metric-icon"></i>
+                        Total Memory
+                    </span>
+                    <span class="metric-value" id="total-memory">Loading...</span>
                 </div>
-                <div>
-                    <strong>Free Memory: </strong>
-                    <span id="free-memory"></span>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-pie-chart-fill metric-icon"></i>
+                        Used Memory
+                    </span>
+                    <span class="metric-value" id="used-memory">Loading...</span>
                 </div>
-                <div>
-                    <strong>CPU Load: </strong>
-                    <span id="cpu-load"></span>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-pie-chart metric-icon"></i>
+                        Free Memory
+                    </span>
+                    <span class="metric-value" id="free-memory">Loading...</span>
                 </div>
-                <div>
-                    <strong>Uptime:</strong>
-                    <span id="uptime"></span>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-clock-history metric-icon"></i>
+                        System Uptime
+                    </span>
+                    <span class="metric-value" id="uptime">Loading...</span>
                 </div>
+            </div>
+        </div>
 
-                <div>
-                    <strong>Disk usage:</strong>
-                    <span id="disk-usage-test"></span>
+        <!-- Disk Usage Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card-floating">
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-hdd-stack metric-icon"></i>
+                        Size
+                    </span>
+                    <span class="metric-value" id="disk-size">Loading...</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-hdd-fill metric-icon"></i>
+                        Used
+                    </span>
+                    <span class="metric-value" id="disk-used">Loading...</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-hdd metric-icon"></i>
+                        Available
+                    </span>
+                    <span class="metric-value" id="disk-available">Loading...</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-percent metric-icon"></i>
+                        Usage
+                    </span>
+                    <span class="metric-value" id="disk-usage-percent">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CPU Usage Row -->
+    <div class="row g-4 mb-4">
+        <!-- Per-Core CPU Usage -->
+        <div class="col-12 col-lg-8">
+            <div class="card-floating">
+                <div id="cpu-bars-container" class="row g-3">
+                    <p class="text-muted">Loading CPU data...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Average Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card-floating">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-header-custom mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Load Average
+                    </h5>
+                    <button class="btn btn-sm btn-outline-secondary rounded-circle p-1"
+                            type="button"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="left"
+                            data-bs-html="true"
+                            title="<strong>Load Average Explained:</strong><br>
+                                   • Values shown for 1, 5, and 15 minutes<br>
+                                   • Value = 12: 100% CPU utilization<br>
+                                   • Value < 12: System has spare capacity<br>
+                                   • Value > 12: System is overloaded">
+                        <i class="bi bi-info-lg"></i>
+                    </button>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-clock metric-icon"></i>
+                        1 minute
+                    </span>
+                    <span class="metric-value" id="load-1min">--</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-clock-history metric-icon"></i>
+                        5 minutes
+                    </span>
+                    <span class="metric-value" id="load-5min">--</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-label">
+                        <i class="bi bi-clock-fill metric-icon"></i>
+                        15 minutes
+                    </span>
+                    <span class="metric-value" id="load-15min">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Network Interfaces Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card-floating">
+                <h5 class="card-header-custom">
+                    <i class="bi bi-ethernet me-2"></i>
+                    Network Interfaces
+                </h5>
+                <div id="network-interfaces">
+                    <p class="text-muted">Loading network information...</p>
                 </div>
             </div>
         </div>
@@ -103,12 +238,26 @@
 
     <!-- API Test Section -->
     <div class="row mt-5">
-        <ul>
-            <li><a href="/api/servers" target="_blank">/api/servers</a> - Get all servers</li>
-            <li><a href="/api/servers/1" target="_blank">/api/servers/1</a> - Get server with ID 1</li>
-            <br>
-            <p>(everything else is done with postman)</p>
-        </ul>
+        <div class="col-12">
+            <div class="card-floating">
+                <h5 class="card-header-custom">API Endpoints</h5>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        <a href="/api/servers" target="_blank">/api/servers</a> - Get all servers
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        <a href="/api/servers/1" target="_blank">/api/servers/1</a> - Get server with ID 1
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-link-45deg me-2"></i>
+                        <a href="/api/stats" target="_blank">/api/stats</a> - Get system statistics
+                    </li>
+                </ul>
+                <p class="text-muted small mt-3">(Other endpoints can be tested with Postman)</p>
+            </div>
+        </div>
     </div>
 </div>
 
