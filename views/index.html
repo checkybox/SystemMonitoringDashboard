@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-extra.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -58,206 +60,213 @@
 
 <!-- Main container -->
 <div class="container my-5 temp-hidden">
+    <div class="grid-stack">
 
-    <!-- Metrics Row -->
-    <div class="row g-4 mb-4">
         <!-- Static System Information Card -->
-        <div class="col-12 col-lg-4">
-            <div class="card-floating">
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-person-badge metric-icon"></i>
-                        User & Host
-                    </span>
-                    <span class="metric-value" id="username+hostname">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-ubuntu metric-icon"></i>
-                        Operating System
-                    </span>
-                    <span class="metric-value" id="os+arch">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-gear-fill metric-icon"></i>
-                        Kernel Version
-                    </span>
-                    <span class="metric-value" id="kernel-version">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-cpu metric-icon"></i>
-                        Processor
-                    </span>
-                    <span class="metric-value" id="cpu-info">Loading...</span>
+        <div class="grid-stack-item" gs-w="4" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="0" gs-y="0">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-person-badge metric-icon"></i>
+                            User & Host
+                        </span>
+                        <span class="metric-value" id="username+hostname">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-ubuntu metric-icon"></i>
+                            Operating System
+                        </span>
+                        <span class="metric-value" id="os+arch">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-gear-fill metric-icon"></i>
+                            Kernel Version
+                        </span>
+                        <span class="metric-value" id="kernel-version">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-cpu metric-icon"></i>
+                            Processor
+                        </span>
+                        <span class="metric-value" id="cpu-info">Loading...</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Dynamic Metrics Card -->
-        <div class="col-12 col-lg-4">
-            <div class="card-floating">
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-memory metric-icon"></i>
-                        Total Memory
-                    </span>
-                    <span class="metric-value" id="total-memory">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-pie-chart-fill metric-icon"></i>
-                        Used Memory
-                    </span>
-                    <span class="metric-value" id="used-memory">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-pie-chart metric-icon"></i>
-                        Free Memory
-                    </span>
-                    <span class="metric-value" id="free-memory">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-clock-history metric-icon"></i>
-                        System Uptime
-                    </span>
-                    <span class="metric-value" id="uptime">Loading...</span>
+        <div class="grid-stack-item" gs-w="4" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="4" gs-y="0">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-memory metric-icon"></i>
+                            Total Memory
+                        </span>
+                        <span class="metric-value" id="total-memory">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-pie-chart-fill metric-icon"></i>
+                            Used Memory
+                        </span>
+                        <span class="metric-value" id="used-memory">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-pie-chart metric-icon"></i>
+                            Free Memory
+                        </span>
+                        <span class="metric-value" id="free-memory">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-clock-history metric-icon"></i>
+                            System Uptime
+                        </span>
+                        <span class="metric-value" id="uptime">Loading...</span>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Disk Usage Card -->
-        <div class="col-12 col-lg-4">
-            <div class="card-floating">
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-hdd-stack metric-icon"></i>
-                        Size
-                    </span>
-                    <span class="metric-value" id="disk-size">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-hdd-fill metric-icon"></i>
-                        Used
-                    </span>
-                    <span class="metric-value" id="disk-used">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-hdd metric-icon"></i>
-                        Available
-                    </span>
-                    <span class="metric-value" id="disk-available">Loading...</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-percent metric-icon"></i>
-                        Usage
-                    </span>
-                    <span class="metric-value" id="disk-usage-percent">Loading...</span>
+        <div class="grid-stack-item" gs-w="4" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="8" gs-y="0">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-hdd-stack metric-icon"></i>
+                            Size
+                        </span>
+                        <span class="metric-value" id="disk-size">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-hdd-fill metric-icon"></i>
+                            Used
+                        </span>
+                        <span class="metric-value" id="disk-used">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-hdd metric-icon"></i>
+                            Available
+                        </span>
+                        <span class="metric-value" id="disk-available">Loading...</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-percent metric-icon"></i>
+                            Usage
+                        </span>
+                        <span class="metric-value" id="disk-usage-percent">Loading...</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- CPU Usage Row -->
-    <div class="row g-4 mb-4">
         <!-- Per-Core CPU Usage -->
-        <div class="col-12 col-lg-8">
-            <div class="card-floating">
-                <div id="cpu-bars-container" class="row g-3">
-                    <p class="text-muted">Loading CPU data...</p>
+        <div class="grid-stack-item" gs-w="8" gs-h="5" gs-min-w="6" gs-min-h="5" gs-x="0" gs-y="4">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <div id="cpu-bars-container" class="row g-3">
+                        <p class="text-muted">Loading CPU data...</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Load Average Card -->
-        <div class="col-12 col-lg-4">
-            <div class="card-floating">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="card-header-custom mb-0">
-                        <i class="bi bi-graph-up me-2"></i>
-                        Load Average
+        <div class="grid-stack-item" gs-w="4" gs-h="5" gs-min-w="3" gs-min-h="4" gs-x="8" gs-y="4">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-header-custom mb-0">
+                            <i class="bi bi-graph-up me-2"></i>
+                            Load Average
+                        </h5>
+                        <button class="btn btn-sm btn-outline-secondary rounded-circle p-1"
+                                type="button"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="left"
+                                data-bs-html="true"
+                                title="<strong>Load Average Explained:</strong><br>
+                                       • Values shown for 1, 5, and 15 minutes<br>
+                                       • Value = 12: 100% CPU utilization<br>
+                                       • Value < 12: System has spare capacity<br>
+                                       • Value > 12: System is overloaded">
+                            <i class="bi bi-info-lg"></i>
+                        </button>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-clock metric-icon"></i>
+                            1 minute
+                        </span>
+                        <span class="metric-value" id="load-1min">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-clock-history metric-icon"></i>
+                            5 minutes
+                        </span>
+                        <span class="metric-value" id="load-5min">--</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">
+                            <i class="bi bi-clock-fill metric-icon"></i>
+                            15 minutes
+                        </span>
+                        <span class="metric-value" id="load-15min">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Interfaces Card -->
+        <div class="grid-stack-item" gs-w="12" gs-h="6" gs-min-w="8" gs-min-h="6" gs-max-h="10" gs-x="0" gs-y="9">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <h5 class="card-header-custom">
+                        <i class="bi bi-ethernet me-2"></i>
+                        Network Interfaces
                     </h5>
-                    <button class="btn btn-sm btn-outline-secondary rounded-circle p-1"
-                            type="button"
-                            data-bs-toggle="tooltip"
-                            data-bs-placement="left"
-                            data-bs-html="true"
-                            title="<strong>Load Average Explained:</strong><br>
-                                   • Values shown for 1, 5, and 15 minutes<br>
-                                   • Value = 12: 100% CPU utilization<br>
-                                   • Value < 12: System has spare capacity<br>
-                                   • Value > 12: System is overloaded">
-                        <i class="bi bi-info-lg"></i>
-                    </button>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-clock metric-icon"></i>
-                        1 minute
-                    </span>
-                    <span class="metric-value" id="load-1min">--</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-clock-history metric-icon"></i>
-                        5 minutes
-                    </span>
-                    <span class="metric-value" id="load-5min">--</span>
-                </div>
-                <div class="metric-row">
-                    <span class="metric-label">
-                        <i class="bi bi-clock-fill metric-icon"></i>
-                        15 minutes
-                    </span>
-                    <span class="metric-value" id="load-15min">--</span>
+                    <div id="network-interfaces">
+                        <p class="text-muted">Loading network information...</p>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Network Interfaces Card -->
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="card-floating">
-                <h5 class="card-header-custom">
-                    <i class="bi bi-ethernet me-2"></i>
-                    Network Interfaces
-                </h5>
-                <div id="network-interfaces">
-                    <p class="text-muted">Loading network information...</p>
+        <!-- API Endpoints -->
+        <div class="grid-stack-item" gs-w="12" gs-h="5" gs-min-w="4" gs-min-h="4" gs-x="0" gs-y="15">
+            <div class="grid-stack-item-content">
+                <div class="card-floating h-100">
+                    <h5 class="card-header-custom">API Endpoints</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-link-45deg me-2"></i>
+                            <a href="/api/servers" target="_blank">/api/servers</a> - Get all servers
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-link-45deg me-2"></i>
+                            <a href="/api/servers/1" target="_blank">/api/servers/1</a> - Get server with ID 1
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-link-45deg me-2"></i>
+                            <a href="/api/stats" target="_blank">/api/stats</a> - Get system statistics
+                        </li>
+                    </ul>
+                    <p class="text-muted small mt-3">(Other endpoints can be tested with Postman)</p>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- API Test Section -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <div class="card-floating">
-                <h5 class="card-header-custom">API Endpoints</h5>
-                <ul class="list-unstyled">
-                    <li class="mb-2">
-                        <i class="bi bi-link-45deg me-2"></i>
-                        <a href="/api/servers" target="_blank">/api/servers</a> - Get all servers
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-link-45deg me-2"></i>
-                        <a href="/api/servers/1" target="_blank">/api/servers/1</a> - Get server with ID 1
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-link-45deg me-2"></i>
-                        <a href="/api/stats" target="_blank">/api/stats</a> - Get system statistics
-                    </li>
-                </ul>
-                <p class="text-muted small mt-3">(Other endpoints can be tested with Postman)</p>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -273,6 +282,8 @@
 </script>
 <script src="/script.js"></script>
 <script src="/theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
+<script src="/gridstack-init.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>

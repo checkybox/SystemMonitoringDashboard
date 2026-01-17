@@ -181,6 +181,12 @@ body {
 }
 
 /* Network interfaces specific styles */
+#network-interfaces {
+    max-height: calc(100% - 60px); /* Account for header */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
 #network-interfaces h6 {
     font-size: 1.25rem;
     padding-bottom: 0.5rem;
@@ -199,6 +205,33 @@ body {
 #network-interfaces .metric-row {
     border-bottom: none;
     padding: 0.5rem 0;
+}
+
+/* Custom scrollbar for network interfaces */
+#network-interfaces::-webkit-scrollbar {
+    width: 6px;
+}
+
+#network-interfaces::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#network-interfaces::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+[data-bs-theme="dark"] #network-interfaces::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+#network-interfaces::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+}
+
+[data-bs-theme="dark"] #network-interfaces::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
 }
 
 /* CPU progress bars */
@@ -309,5 +342,57 @@ body {
         font-size: 1.2rem;
         margin-right: 0.5rem;
     }
+}
+
+/* Gridstack customization */
+.grid-stack {
+    background: transparent;
+}
+
+.grid-stack-item-content {
+    overflow: visible !important;
+    inset: 8px !important; /* Add margin between tiles */
+}
+
+.grid-stack-item {
+    cursor: move;
+    overflow: visible !important; /* Prevent clipping hover effects */
+}
+
+.grid-stack-item:hover {
+    opacity: 0.95;
+    z-index: 10; /* Ensure hover effect is visible above other tiles */
+}
+
+.grid-stack-item.ui-draggable-dragging {
+    opacity: 0.8;
+    z-index: 1000;
+}
+
+.grid-stack-item.ui-resizable-resizing {
+    opacity: 0.9;
+}
+
+/* Gridstack placeholder styling */
+.grid-stack-placeholder > .placeholder-content {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    border: 2px dashed rgba(0, 123, 255, 0.5) !important;
+    border-radius: 1.5rem;
+    margin: 8px; /* Match tile margin */
+}
+
+[data-bs-theme="dark"] .grid-stack-placeholder > .placeholder-content {
+    background-color: rgba(108, 117, 125, 0.2) !important;
+    border: 2px dashed rgba(108, 117, 125, 0.5) !important;
+}
+
+/* Resize handles */
+.ui-resizable-handle {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.grid-stack-item:hover .ui-resizable-handle {
+    opacity: 1;
 }
 
