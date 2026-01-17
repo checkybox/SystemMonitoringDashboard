@@ -49,7 +49,5 @@ async function getDiskUsage() {
 loadStaticStats()
 loadStats()
 getOsRelease()
-
-setInterval(loadStats, 1000) // auto-refresh every 1 second
-
 getDiskUsage()
+setInterval(loadStats, 1000) // auto-refresh every 1 second

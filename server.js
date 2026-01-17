@@ -60,5 +60,10 @@ app.use('/', contactRoutes);
 
 // 404 handler - must be last
 app.use((req, res) => {
+    // If the request is for an API route, return JSON
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    // Otherwise, return the 404 HTML page
     res.status(404).sendFile(path.join(__dirname, 'views/404.html'));
 });
