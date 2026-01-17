@@ -16,6 +16,18 @@ const metricsSchema = new mongoose.Schema({
 
 const Metrics = mongoose.model('Metrics', metricsSchema);
 
+// Define Server schema and model for CRUD operations
+const serverSchema = new mongoose.Schema({
+    id: { type: Number, required: true, unique: true },
+    hostname: { type: String, required: true },
+    arch: { type: String, required: true },
+    os_type: { type: String, required: true },
+    release: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Server = mongoose.model('Server', serverSchema);
+
 // Project info endpoint
 router.get('/info', (req, res) => {
     const projectInfo = {
@@ -73,6 +85,8 @@ router.get('/stats', (req, res) => {
         totalMem: os.totalmem(),
         uptime: os.uptime(),
     };
+
+    console.log(data.networkInterfaces)
 
     const metrics = new Metrics({
         cpuLoad: data.cpuLoad,
@@ -136,6 +150,145 @@ router.get('/ls', (req, res) => {
     res.send('Executed ls -l command. Check server console for output.');
 });
 
-export { Metrics };
+// ==================== CRUD API ROUTES FOR SERVERS ====================
+
+// GET /api/servers - Return all servers (sorted by id ASC)
+router.get('/servers', async (req, res) => {
+    try {
+        const servers = await Server.find().sort({ id: 1 });
+        res.status(200).json(servers);
+    } catch (error) {
+        console.error('Error fetching servers:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET /api/servers/:id - Return a single server by id
+router.get('/servers/:id', async (req, res) => {
+    const { id } = req.params;
+
+    // Validate id is a number
+    if (isNaN(id) || !Number.isInteger(Number(id))) {
+        return res.status(400).json({ error: 'Invalid id' });
+    }
+
+    try {
+        const server = await Server.findOne({ id: Number(id) });
+
+        if (!server) {
+            return res.status(404).json({ error: 'Server not found' });
+        }
+
+        res.status(200).json(server);
+    } catch (error) {
+        console.error('Error fetching server:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// POST /api/servers - Create a new server
+router.post('/servers', async (req, res) => {
+    const { id, hostname, arch, os_type, release } = req.body;
+
+    // Validate required fields
+    if (!id || !hostname || !arch || !os_type || !release) {
+        return res.status(400).json({
+            error: 'Missing required fields. Required: id, hostname, arch, os_type, release'
+        });
+    }
+
+    // Validate id is a number
+    if (isNaN(id) || !Number.isInteger(Number(id))) {
+        return res.status(400).json({ error: 'Invalid id. Must be an integer.' });
+    }
+
+    try {
+        // Check if server with this id already exists
+        const existingServer = await Server.findOne({ id: Number(id) });
+        if (existingServer) {
+            return res.status(400).json({ error: 'Server with this id already exists' });
+        }
+
+        const newServer = new Server({
+            id: Number(id),
+            hostname,
+            arch,
+            os_type,
+            release
+        });
+
+        await newServer.save();
+        res.status(201).json(newServer);
+    } catch (error) {
+        console.error('Error creating server:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// PUT /api/servers/:id - Update an existing server by id
+router.put('/servers/:id', async (req, res) => {
+    const { id } = req.params;
+    const { hostname, arch, os_type, release } = req.body;
+
+    // Validate id is a number
+    if (isNaN(id) || !Number.isInteger(Number(id))) {
+        return res.status(400).json({ error: 'Invalid id' });
+    }
+
+    // Validate at least one field is provided
+    if (!hostname && !arch && !os_type && !release) {
+        return res.status(400).json({
+            error: 'At least one field must be provided for update (hostname, arch, os_type, release)'
+        });
+    }
+
+    try {
+        const updateData = {};
+        if (hostname) updateData.hostname = hostname;
+        if (arch) updateData.arch = arch;
+        if (os_type) updateData.os_type = os_type;
+        if (release) updateData.release = release;
+
+        const updatedServer = await Server.findOneAndUpdate(
+            { id: Number(id) },
+            updateData,
+            { new: true } // Return the updated document
+        );
+
+        if (!updatedServer) {
+            return res.status(404).json({ error: 'Server not found' });
+        }
+
+        res.status(200).json(updatedServer);
+    } catch (error) {
+        console.error('Error updating server:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// DELETE /api/servers/:id - Delete a server by id
+router.delete('/servers/:id', async (req, res) => {
+    const { id } = req.params;
+
+    // Validate id is a number
+    if (isNaN(id) || !Number.isInteger(Number(id))) {
+        return res.status(400).json({ error: 'Invalid id' });
+    }
+
+    try {
+        const deletedServer = await Server.findOneAndDelete({ id: Number(id) });
+
+        if (!deletedServer) {
+            return res.status(404).json({ error: 'Server not found' });
+        }
+
+        res.status(200).json({ message: 'Server deleted successfully', server: deletedServer });
+    } catch (error) {
+        console.error('Error deleting server:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+export { Metrics, Server };
 export default router;
 

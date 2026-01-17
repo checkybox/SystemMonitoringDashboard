@@ -52,6 +52,14 @@ body {
     opacity: 0;
 }
 
+#logo-animated {
+    transition: transform 1s ease;
+}
+
+#logo-animated:hover {
+    transform: rotate(360deg) scale(1.2);
+}
+
 .temp-hidden {
     opacity: 0;
 }
