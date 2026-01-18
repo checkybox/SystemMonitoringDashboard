@@ -209,25 +209,111 @@
         </div>
 
         <!-- API Endpoints -->
-        <div class="grid-stack-item" gs-w="3" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="0" gs-y="9">
+        <div class="grid-stack-item" gs-w="6" gs-h="5" gs-min-w="4" gs-min-h="5" gs-x="0" gs-y="9">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
-                    <h5 class="card-header-custom">API Endpoints</h5>
-                    <ul class="list-unstyled">
-                        <li class="mb-2">
-                            <i class="bi bi-link-45deg me-2"></i>
-                            <a href="/api/servers" target="_blank">/api/servers</a> - Get all servers
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-link-45deg me-2"></i>
-                            <a href="/api/servers/1" target="_blank">/api/servers/1</a> - Get server with ID 1
-                        </li>
-                        <li class="mb-2">
-                            <i class="bi bi-link-45deg me-2"></i>
-                            <a href="/api/stats" target="_blank">/api/stats</a> - Get system statistics
-                        </li>
-                    </ul>
-                    <p class="text-muted small mt-3">(Other endpoints can be tested with Postman)</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-header-custom mb-0">
+                            <i class="bi bi-server me-2"></i>
+                            CRUD API Endpoints
+                        </h5>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Click to test
+                        </small>
+                    </div>
+
+                    <div class="row g-3">
+                        <!-- GET ALL -->
+                        <div class="col-md-6">
+                            <div class="api-endpoint-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-list-ul me-2 text-success"></i>
+                                    <strong class="text-success">GET ALL</strong>
+                                </div>
+                                <a href="/api/servers" target="_blank" class="text-decoration-none">
+                                    <code class="d-block">GET /api/servers</code>
+                                </a>
+                                <small class="text-muted d-block mt-1">
+                                    ?sort, ?limit, ?fields
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- GET ONE -->
+                        <div class="col-md-6">
+                            <div class="api-endpoint-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-eye me-2 text-info"></i>
+                                    <strong class="text-info">GET ONE</strong>
+                                </div>
+                                <a href="/api/servers/checky@desktop" target="_blank" class="text-decoration-none">
+                                    <code class="d-block">GET /api/servers/:id</code>
+                                </a>
+                                <small class="text-muted d-block mt-1">
+                                    by ID or identifier
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- CREATE -->
+                        <div class="col-md-6">
+                            <div class="api-endpoint-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-plus-circle me-2 text-primary"></i>
+                                    <strong class="text-primary">CREATE</strong>
+                                </div>
+                                <code class="d-block">POST /api/servers</code>
+                                <small class="text-muted d-block mt-1">
+                                    Body: hostname, username
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- UPDATE -->
+                        <div class="col-md-6">
+                            <div class="api-endpoint-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-pencil-square me-2 text-warning"></i>
+                                    <strong class="text-warning">UPDATE</strong>
+                                </div>
+                                <code class="d-block">PUT /api/servers/:id</code>
+                                <small class="text-muted d-block mt-1">
+                                    Partial or full update
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- DELETE -->
+                        <div class="col-md-6">
+                            <div class="api-endpoint-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-trash me-2 text-danger"></i>
+                                    <strong class="text-danger">DELETE</strong>
+                                </div>
+                                <code class="d-block">DELETE /api/servers/:id</code>
+                                <small class="text-muted d-block mt-1">
+                                    ?dryRun=true for preview
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- METRICS -->
+                        <div class="col-md-6">
+                            <div class="api-endpoint-item">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-bar-chart me-2 text-secondary"></i>
+                                    <strong class="text-secondary">METRICS</strong>
+                                </div>
+                                <a href="/api/servers/checky@desktop/metrics?limit=5" target="_blank" class="text-decoration-none">
+                                    <code class="d-block">GET /api/servers/:id/metrics</code>
+                                </a>
+                                <small class="text-muted d-block mt-1">
+                                    ?limit, ?since (minutes)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

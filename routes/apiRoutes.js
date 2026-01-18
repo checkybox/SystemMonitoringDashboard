@@ -44,40 +44,6 @@ const metricsSchema = new mongoose.Schema({
 
 const Metrics = mongoose.model('Metrics', metricsSchema);
 
-
-// Project info endpoint
-router.get('/info', (req, res) => {
-    const projectInfo = {
-        projectName: 'System Monitoring Dashboard',
-        version: '1.0.0',
-        description: 'A minimal web-based dashboard for viewing system metrics such as CPU load, memory usage, uptime, and more.',
-        author: 'Vitaliy Golubenko (SE-2423)',
-        routes: {
-            pages: [
-                { path: '/', method: 'GET', description: 'Home page with system overview' },
-                { path: '/about', method: 'GET', description: 'About page with team info and planned features' },
-                { path: '/contact', method: 'GET', description: 'Contact form page' },
-                { path: '/search', method: 'GET', description: 'Search page (query parameter: q)' },
-                { path: '/item/:id', method: 'GET', description: 'Item detail page (route parameter: id)' }
-            ],
-            api: [
-                { path: '/api/info', method: 'GET', description: 'Returns project information in JSON format' },
-                { path: '/api/static-stats', method: 'GET', description: 'Returns static system information' },
-                { path: '/api/stats', method: 'GET', description: 'Returns dynamic system statistics' },
-                { path: '/api/os-release', method: 'GET', description: 'Returns OS release information' },
-                { path: '/api/disk-usage', method: 'GET', description: 'Returns disk usage statistics' },
-                { path: '/api/free', method: 'GET', description: 'Returns memory usage information' }
-            ],
-            forms: [
-                { path: '/contact', method: 'POST', description: 'Handles contact form submission' }
-            ]
-        },
-        timestamp: new Date().toISOString()
-    };
-
-    res.json(projectInfo);
-});
-
 // Static system stats
 router.get('/static-stats', (req, res) => {
     const data = {
@@ -310,30 +276,6 @@ router.get('/cpu-per-core', (req, res) => {
     });
 });
 
-// Memory usage
-router.get('/free', (req, res) => {
-    exec('free -h', (err, stdout) => {
-        if (err) {
-            console.error(err);
-            res.status(500).send('Error executing command');
-            return;
-        }
-        res.send(stdout);
-    });
-});
-
-// List directory (debug endpoint)
-router.get('/ls', (req, res) => {
-    exec('ls -l', (err, stdout) => {
-        if (err) {
-            console.error(err);
-            return;
-        }
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${err}`);
-    });
-    res.send('Executed ls -l command. Check server console for output.');
-});
 
 // ==================== CRUD API ROUTES FOR SERVERS ====================
 
@@ -511,9 +453,10 @@ router.put('/servers/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/servers/:id - Delete a server by MongoDB _id
+// DELETE /api/servers/:id - Delete a server by MongoDB _id (supports dry-run)
 router.delete('/servers/:id', async (req, res) => {
     const { id } = req.params;
+    const { dryRun } = req.query;
 
     // Validate MongoDB ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -521,13 +464,30 @@ router.delete('/servers/:id', async (req, res) => {
     }
 
     try {
-        const deletedServer = await Server.findByIdAndDelete(id);
+        // Find the server first
+        const server = await Server.findById(id);
 
-        if (!deletedServer) {
+        if (!server) {
             return res.status(404).json({ error: 'Server not found' });
         }
 
-        // Optionally delete all metrics associated with this server
+        // Count metrics that would be deleted
+        const metricsCount = await Metrics.countDocuments({ server_id: id });
+
+        // If dry-run mode, return what would be deleted without actually deleting
+        if (dryRun === 'true') {
+            return res.status(200).json({
+                message: 'Dry-run mode: No data was deleted',
+                dryRun: true,
+                wouldDelete: {
+                    server: server,
+                    metricsCount: metricsCount
+                }
+            });
+        }
+
+        // Perform actual deletion
+        const deletedServer = await Server.findByIdAndDelete(id);
         const deletedMetrics = await Metrics.deleteMany({ server_id: id });
         console.log(`Deleted ${deletedMetrics.deletedCount} metrics for server ${deletedServer.identifier}`);
 

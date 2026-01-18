@@ -394,3 +394,66 @@ body::before {
     opacity: 1;
 }
 
+/* API Endpoint Items */
+.api-endpoint-item {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background-color: rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
+    height: 100%;
+}
+
+[data-bs-theme="dark"] .api-endpoint-item {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.api-endpoint-item:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-bs-theme="dark"] .api-endpoint-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.api-endpoint-item code {
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    color: inherit;
+}
+
+[data-bs-theme="dark"] .api-endpoint-item code {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.api-endpoint-item a {
+    color: inherit;
+}
+
+.api-endpoint-item a:hover code {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+[data-bs-theme="dark"] .api-endpoint-item a:hover code {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.api-endpoint-item strong {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+.api-endpoint-item small {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
