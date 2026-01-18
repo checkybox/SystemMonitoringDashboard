@@ -26,7 +26,7 @@
                 <ul class="navbar-nav ms-auto fs-4">
                     <li class="nav-item"><a class="nav-link fw-light active" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/settings">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
                     <li class="nav-item">
@@ -40,26 +40,8 @@
     </nav>
 </div>
 
-<!-- Dashboard description -->
-<div class="container my-4">
-    <div class="row">
-        <div class="col">
-            <div class="d-flex justify-content-center align-items-center flex-column" id="title-animated">
-                <h1 class="fs-1">System Monitoring Dashboard</h1>
-                <p class="fs-4 fw-light text-center">A minimal web-based dashboard for viewing system metrics such as CPU load, memory usage, uptime, and more.</p>
-            </div>
-        </div>
-    </div>
-</div>
-<script>
-    $("#title-animated").animate({
-        top: '0px',
-        opacity: '1',
-    }, 1000)
-</script>
-
 <!-- Main container -->
-<div class="container my-5 temp-hidden">
+<div class="container-fluid px-4 my-5" id="dashboard-animated">
     <div class="grid-stack">
 
         <!-- Static System Information Card -->
@@ -99,7 +81,7 @@
         </div>
 
         <!-- Dynamic Metrics Card -->
-        <div class="grid-stack-item" gs-w="4" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="4" gs-y="0">
+        <div class="grid-stack-item" gs-w="3" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="4" gs-y="0">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
                     <div class="metric-row">
@@ -135,7 +117,7 @@
         </div>
 
         <!-- Disk Usage Card -->
-        <div class="grid-stack-item" gs-w="4" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="8" gs-y="0">
+        <div class="grid-stack-item" gs-w="2" gs-h="4" gs-min-w="2" gs-min-h="4" gs-x="7" gs-y="0">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
                     <div class="metric-row">
@@ -171,7 +153,7 @@
         </div>
 
         <!-- Per-Core CPU Usage -->
-        <div class="grid-stack-item" gs-w="8" gs-h="5" gs-min-w="6" gs-min-h="5" gs-x="0" gs-y="4">
+        <div class="grid-stack-item" gs-w="6" gs-h="5" gs-min-w="4" gs-min-h="5" gs-x="0" gs-y="4">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
                     <div id="cpu-bars-container" class="row g-3">
@@ -182,27 +164,13 @@
         </div>
 
         <!-- Load Average Card -->
-        <div class="grid-stack-item" gs-w="4" gs-h="5" gs-min-w="3" gs-min-h="4" gs-x="8" gs-y="4">
+        <div class="grid-stack-item" gs-w="3" gs-h="4" gs-min-w="2" gs-min-h="4" gs-x="9" gs-y="4">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-header-custom mb-0">
-                            <i class="bi bi-graph-up me-2"></i>
-                            Load Average
-                        </h5>
-                        <button class="btn btn-sm btn-outline-secondary rounded-circle p-1"
-                                type="button"
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="left"
-                                data-bs-html="true"
-                                title="<strong>Load Average Explained:</strong><br>
-                                       • Values shown for 1, 5, and 15 minutes<br>
-                                       • Value = 12: 100% CPU utilization<br>
-                                       • Value < 12: System has spare capacity<br>
-                                       • Value > 12: System is overloaded">
-                            <i class="bi bi-info-lg"></i>
-                        </button>
-                    </div>
+                    <h5 class="card-header-custom">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Load Average
+                    </h5>
                     <div class="metric-row">
                         <span class="metric-label">
                             <i class="bi bi-clock metric-icon"></i>
@@ -229,7 +197,7 @@
         </div>
 
         <!-- Network Interfaces Card -->
-        <div class="grid-stack-item" gs-w="12" gs-h="6" gs-min-w="8" gs-min-h="6" gs-max-h="10" gs-x="0" gs-y="9">
+        <div class="grid-stack-item" gs-w="6" gs-h="6" gs-min-w="4" gs-min-h="6" gs-max-h="10" gs-x="6" gs-y="4">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
                     <h5 class="card-header-custom">
@@ -244,7 +212,7 @@
         </div>
 
         <!-- API Endpoints -->
-        <div class="grid-stack-item" gs-w="12" gs-h="5" gs-min-w="4" gs-min-h="4" gs-x="0" gs-y="15">
+        <div class="grid-stack-item" gs-w="3" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="3" gs-y="9">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
                     <h5 class="card-header-custom">API Endpoints</h5>
@@ -273,12 +241,8 @@
 
 
 <script>
-    setTimeout(function() {
-        $(".temp-hidden").animate({
-            opacity: '1',
-        }, 1000)
-        // $("html").css("background-color", "var(--bg-dark-custom)") // Change overscroll background color to match header and footer
-    }, 1000)
+    // Better animation using CSS class
+    document.getElementById('dashboard-animated').classList.add('animate-in');
 </script>
 <script src="/script.js"></script>
 <script src="/theme.js"></script>

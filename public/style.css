@@ -45,12 +45,48 @@ body {
     border-radius: 2rem;
 }
 
-/* Animated content */
-#title-animated {
-    position: relative;
-    top: 100px;
-    opacity: 0;
+/* Full-width dashboard with constraints */
+#dashboard-animated {
+    max-width: 1920px;
+    margin: 0 auto;
 }
+
+/* Better animation - slide from below with fade and slight scale */
+#dashboard-animated.animate-in {
+    animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Subtle background pattern */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.03;
+    background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: -1;
+}
+
+[data-bs-theme="dark"] body::before {
+    opacity: 0.02;
+}
+
+/* Animated content */
 
 #logo-animated {
     transition: transform 1s ease;
@@ -60,9 +96,6 @@ body {
     transform: rotate(360deg) scale(1.2);
 }
 
-.temp-hidden {
-    opacity: 0;
-}
 
 /* Theme toggle button */
 #theme-toggle {
@@ -182,9 +215,7 @@ body {
 
 /* Network interfaces specific styles */
 #network-interfaces {
-    max-height: calc(100% - 60px); /* Account for header */
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: visible;
 }
 
 #network-interfaces h6 {
@@ -207,32 +238,6 @@ body {
     padding: 0.5rem 0;
 }
 
-/* Custom scrollbar for network interfaces */
-#network-interfaces::-webkit-scrollbar {
-    width: 6px;
-}
-
-#network-interfaces::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-#network-interfaces::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.15);
-    border-radius: 10px;
-    transition: background 0.2s;
-}
-
-[data-bs-theme="dark"] #network-interfaces::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-#network-interfaces::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.25);
-}
-
-[data-bs-theme="dark"] #network-interfaces::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.25);
-}
 
 /* CPU progress bars */
 .cpu-bar-row {

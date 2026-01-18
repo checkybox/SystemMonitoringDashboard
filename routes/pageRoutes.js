@@ -16,6 +16,11 @@ router.get('/about', (req, res) => {
     res.sendFile(path.join(__dirname, '../views/about.html'));
 });
 
+// Settings page
+router.get('/settings', (req, res) => {
+    res.sendFile(path.join(__dirname, '../views/settings.html'));
+});
+
 // Contact page (GET)
 router.get('/contact', (req, res) => {
     res.sendFile(path.join(__dirname, '../views/contact.html'));

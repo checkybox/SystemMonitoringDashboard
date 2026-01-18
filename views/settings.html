@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Contact</title>
+    <title>Settings - System Monitoring Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -24,8 +24,8 @@
                 <ul class="navbar-nav ms-auto fs-4">
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light" href="/settings">Settings</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light active" href="/contact">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light active" href="/settings">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
                     <li class="nav-item">
                         <button id="theme-toggle" class="btn btn-link nav-link fw-light" onclick="toggleTheme()" aria-label="Toggle theme">
@@ -38,45 +38,49 @@
     </nav>
 </div>
 
-<!--<form method="post" action="/contact">-->
-<!--    <label for="name">Name:</label><br>-->
-<!--    <input type="text" id="name" name="name"><br>-->
-<!--    <label for="email">Email:</label><br>-->
-<!--    <input type="email" id="email" name="email"><br>-->
-<!--    <label for="message">Message:</label><br>-->
-<!--    <textarea id="message" name="message"></textarea><br>-->
-<!--    <input type="submit" value="Submit">-->
-<!--</form>-->
-
-<!-- Contact section -->
-<div class="container my-4">
+<!-- Settings Content -->
+<div class="container my-5">
     <div class="row">
-        <div class="col"></div>
-        <div class="col-12 col-lg-6">
-            <h1 class="mb-4 text-center">Any questions?</h1>
-            <div id="success-message" class="alert alert-success d-none" role="alert">
-                Thanks! Your message has been sent successfully.
+        <div class="col-12 col-lg-8 offset-lg-2">
+            <h1 class="mb-4">
+                <i class="bi bi-gear-fill me-3"></i>
+                Settings
+            </h1>
+
+            <!-- Appearance Settings Section -->
+            <div class="card-floating mb-4">
+                <h3 class="card-header-custom">
+                    <i class="bi bi-palette me-2"></i>
+                    Appearance
+                </h3>
+
+                <!-- Theme Info -->
+                <div class="py-3">
+                    <h5 class="mb-2">Theme</h5>
+                    <p class="text-muted small mb-3">Toggle between light and dark themes using the button in the navigation bar</p>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" onclick="toggleTheme()">
+                            <i class="bi bi-sun-fill me-2"></i>
+                            Toggle Theme
+                        </button>
+                    </div>
+                </div>
             </div>
-            <form id="contact-form" method="post" action="/contact" novalidate>
-                <div class="mb-3">
-                    <label for="name" class="form-label">Name</label>
-                    <input type="text" class="form-control" id="name" name="name" placeholder="Your name" required>
-                    <div class="invalid-feedback">Please enter your name.</div>
+
+            <!-- About Section -->
+            <div class="card-floating">
+                <h3 class="card-header-custom">
+                    <i class="bi bi-info-circle me-2"></i>
+                    About
+                </h3>
+                <div class="py-3">
+                    <p class="mb-2"><strong>Version:</strong> 1.0.0</p>
+                    <p class="mb-2"><strong>Author:</strong> Vitaliy Golubenko (SE-2423)</p>
+                    <p class="mb-0 text-muted small">System Monitoring Dashboard - A minimal web-based dashboard for viewing system metrics</p>
                 </div>
-                <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" placeholder="Your email" required>
-                    <div class="invalid-feedback">Please enter a valid email address.</div>
-                </div>
-                <div class="mb-3">
-                    <label for="message" class="form-label">Message</label>
-                    <textarea class="form-control" id="message" name="message" rows="5" placeholder="Your message" required></textarea>
-                    <div class="invalid-feedback">Please enter a message.</div>
-                </div>
-                <button type="submit" class="btn btn-primary border-radius-25px">Submit</button>
-            </form>
+            </div>
+
         </div>
-        <div class="col"></div>
     </div>
 </div>
 
