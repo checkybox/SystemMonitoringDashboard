@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-extra.min.css" rel="stylesheet">
+    <link rel="preload" href="/assets/images/logo.png" as="image">
     <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
 </head>
 <body>
@@ -25,12 +26,12 @@
             <div id="Navbar" class="navbar-collapse collapse">
                 <ul class="navbar-nav ms-auto fs-4">
                     <li class="nav-item"><a class="nav-link fw-light active" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light" href="/">Machines</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/machines">Machines</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/settings">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
                     <li class="nav-item">
-                        <button id="theme-toggle" class="btn btn-link nav-link fw-light" onclick="toggleTheme()" aria-label="Toggle theme">
+                        <button id="theme-toggle" class="btn btn-link nav-link" onclick="toggleTheme()" aria-label="Toggle theme">
                             <i class="bi bi-moon-fill"></i>
                         </button>
                     </li>
@@ -41,7 +42,7 @@
 </div>
 
 <!-- Main container -->
-<div class="container-fluid px-4 my-5" id="dashboard-animated">
+<div class="container-fluid px-4 mb-5" id="dashboard-animated">
     <div class="grid-stack">
 
         <!-- Static System Information Card -->
@@ -197,13 +198,9 @@
         </div>
 
         <!-- Network Interfaces Card -->
-        <div class="grid-stack-item" gs-w="6" gs-h="6" gs-min-w="4" gs-min-h="6" gs-max-h="10" gs-x="6" gs-y="4">
+        <div class="grid-stack-item" gs-w="6" gs-h="5" gs-min-w="4" gs-min-h="5" gs-max-h="10" gs-x="6" gs-y="4">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
-                    <h5 class="card-header-custom">
-                        <i class="bi bi-ethernet me-2"></i>
-                        Network Interfaces
-                    </h5>
                     <div id="network-interfaces">
                         <p class="text-muted">Loading network information...</p>
                     </div>
@@ -212,7 +209,7 @@
         </div>
 
         <!-- API Endpoints -->
-        <div class="grid-stack-item" gs-w="3" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="3" gs-y="9">
+        <div class="grid-stack-item" gs-w="3" gs-h="4" gs-min-w="3" gs-min-h="4" gs-x="0" gs-y="9">
             <div class="grid-stack-item-content">
                 <div class="card-floating h-100">
                     <h5 class="card-header-custom">API Endpoints</h5>
@@ -237,8 +234,6 @@
 
     </div>
 </div>
-
-
 
 <script>
     // Better animation using CSS class

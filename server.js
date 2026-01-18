@@ -1,5 +1,4 @@
 import express from 'express';
-import os from 'os';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -9,7 +8,6 @@ import { fileURLToPath } from 'url';
 import pageRoutes from './routes/pageRoutes.js';
 import apiRoutes from './routes/apiRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
-import { Metrics } from './routes/apiRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,15 +25,6 @@ async function main() {
     await mongoose.connect(MONGO_URL)
     console.log("MongoDB connected")
 
-    // Save initial metrics
-    const newMetrics = new Metrics({
-        cpuLoad: os.loadavg(),
-        freeMem: os.freemem(),
-        totalMem: os.totalmem(),
-        uptime: os.uptime(),
-        timestamp: new Date()
-    });
-    await newMetrics.save().then(() => console.log("Initial metrics saved"));
 
     app.listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`)
@@ -50,8 +39,17 @@ app.use((req, res, next) => {
     next()
 })
 
-app.use(express.static('public')) // expose public directory
-app.use('/assets', express.static('assets')) // expose assets directory on mount point /assets
+// Static file serving with cache headers
+app.use(express.static('public', {
+    maxAge: '1d', // Cache for 1 day
+    etag: true
+}));
+
+app.use('/assets', express.static('assets', {
+    maxAge: '7d', // Cache images for 7 days
+    etag: true,
+    immutable: true
+}));
 
 // Use routers
 app.use('/', pageRoutes);

@@ -5,8 +5,25 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
-// Define Metrics schema and model
+// Define Server schema and model for CRUD operations
+const serverSchema = new mongoose.Schema({
+    hostname: { type: String, required: true },
+    username: { type: String, required: true },
+    identifier: { type: String, required: true, unique: true }, // username@hostname
+    arch: { type: String, required: true },
+    os_type: { type: String, required: true },
+    release: { type: String, required: true },
+    cpuModel: { type: String },
+    totalMemory: { type: Number },
+    lastSeen: { type: Date, default: Date.now },
+    createdAt: { type: Date, default: Date.now }
+});
+
+const Server = mongoose.model('Server', serverSchema);
+
+// Define Metrics schema with server reference
 const metricsSchema = new mongoose.Schema({
+    server_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Server', required: true },
     cpuLoad: [Number],
     freeMem: Number,
     totalMem: Number,
@@ -27,17 +44,6 @@ const metricsSchema = new mongoose.Schema({
 
 const Metrics = mongoose.model('Metrics', metricsSchema);
 
-// Define Server schema and model for CRUD operations
-const serverSchema = new mongoose.Schema({
-    id: { type: Number, required: true, unique: true },
-    hostname: { type: String, required: true },
-    arch: { type: String, required: true },
-    os_type: { type: String, required: true },
-    release: { type: String, required: true },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const Server = mongoose.model('Server', serverSchema);
 
 // Project info endpoint
 router.get('/info', (req, res) => {
@@ -85,30 +91,123 @@ router.get('/static-stats', (req, res) => {
     res.json(data);
 });
 
-// Dynamic system stats (saves to database)
-router.get('/stats', (req, res) => {
-    const allInterfaces = os.networkInterfaces();
+// Dynamic system stats (saves to database with server association)
+router.get('/stats', async (req, res) => {
+    try {
+        const allInterfaces = os.networkInterfaces();
 
-    // Filter interfaces by name (enp8s, tailscale, wlan)
-    const filteredInterfaces = {};
-    Object.keys(allInterfaces).forEach(name => {
-        if (name.includes('enp8s') || name.includes('tailscale') || name.includes('wlan')) {
-            filteredInterfaces[name] = allInterfaces[name];
+        // Filter interfaces by name (enp8s, tailscale, wlan)
+        const filteredInterfaces = {};
+        Object.keys(allInterfaces).forEach(name => {
+            if (name.includes('enp8s') || name.includes('tailscale') || name.includes('wlan')) {
+                filteredInterfaces[name] = allInterfaces[name];
+            }
+        });
+
+        // Get server information
+        const hostname = os.hostname();
+        const username = os.userInfo().username;
+        const identifier = `${username}@${hostname}`;
+
+        // Find or create server entry
+        let server = await Server.findOne({ identifier });
+
+        if (!server) {
+            // Create new server entry
+            server = new Server({
+                hostname,
+                username,
+                identifier,
+                arch: os.arch(),
+                os_type: os.type(),
+                release: os.release(),
+                cpuModel: os.cpus()[0]?.model || 'Unknown',
+                totalMemory: os.totalmem(),
+                lastSeen: new Date(),
+                createdAt: new Date()
+            });
+            await server.save();
+            console.log(`New server registered: ${identifier}`);
+        } else {
+            // Update server information (kernel, CPU, memory might change over time)
+            const currentRelease = os.release();
+            const currentCpuModel = os.cpus()[0]?.model || 'Unknown';
+            const currentTotalMemory = os.totalmem();
+
+            let updated = false;
+
+            if (server.release !== currentRelease) {
+                console.log(`Server ${identifier}: Kernel updated from ${server.release} to ${currentRelease}`);
+                server.release = currentRelease;
+                updated = true;
+            }
+
+            if (server.cpuModel !== currentCpuModel) {
+                console.log(`Server ${identifier}: CPU model updated to ${currentCpuModel}`);
+                server.cpuModel = currentCpuModel;
+                updated = true;
+            }
+
+            if (server.totalMemory !== currentTotalMemory) {
+                console.log(`Server ${identifier}: Total memory updated to ${(currentTotalMemory / 1024 / 1024 / 1024).toFixed(2)} GB`);
+                server.totalMemory = currentTotalMemory;
+                updated = true;
+            }
+
+            // Always update lastSeen
+            server.lastSeen = new Date();
+
+            if (updated) {
+                console.log(`Server ${identifier}: Hardware/OS information updated`);
+            }
+
+            await server.save();
         }
-    });
 
-    const metrics = new Metrics({
-        cpuLoad: os.loadavg(),
-        freeMem: os.freemem(),
-        totalMem: os.totalmem(),
-        uptime: os.uptime(),
-        networkInterfaces: filteredInterfaces,
-        timestamp: new Date()
-    });
+        // Check if we already saved metrics in the last second to prevent duplicates from multiple tabs
+        const oneSecondAgo = new Date(Date.now() - 1000);
+        const recentMetric = await Metrics.findOne({
+            server_id: server._id,
+            timestamp: { $gte: oneSecondAgo }
+        });
 
-    metrics.save().then(() => console.log("Metrics saved to database"));
+        // Only save new metrics if none exist in the last second
+        if (!recentMetric) {
+            // Create metrics with server_id reference
+            const metrics = new Metrics({
+                server_id: server._id,
+                cpuLoad: os.loadavg(),
+                freeMem: os.freemem(),
+                totalMem: os.totalmem(),
+                uptime: os.uptime(),
+                networkInterfaces: filteredInterfaces,
+                timestamp: new Date()
+            });
 
-    res.json(metrics)
+            await metrics.save();
+        }
+
+        // Always return current stats (whether we saved or not)
+        const response = {
+            cpuLoad: os.loadavg(),
+            freeMem: os.freemem(),
+            totalMem: os.totalmem(),
+            uptime: os.uptime(),
+            networkInterfaces: filteredInterfaces,
+            timestamp: new Date(),
+            server: {
+                identifier,
+                hostname,
+                username
+            },
+            saved: !recentMetric // Indicate if we saved this data point
+        };
+
+        res.json(response);
+    } catch (error) {
+        console.error('Error saving metrics:', error);
+        res.status(500).json({ error: 'Failed to save metrics' });
+    }
 });
 
 // OS release information
@@ -238,69 +337,115 @@ router.get('/ls', (req, res) => {
 
 // ==================== CRUD API ROUTES FOR SERVERS ====================
 
-// GET /api/servers - Return all servers (sorted by id ASC)
+// GET /api/servers - Return all servers (with filtering, sorting, projection support)
 router.get('/servers', async (req, res) => {
     try {
-        const servers = await Server.find().sort({ id: 1 });
-        res.status(200).json(servers);
+        const { sort, limit, fields } = req.query;
+
+        let query = Server.find();
+
+        // Apply sorting (e.g., ?sort=lastSeen or ?sort=-createdAt)
+        if (sort) {
+            query = query.sort(sort);
+        } else {
+            query = query.sort({ lastSeen: -1 }); // Default: most recently seen first
+        }
+
+        // Apply limit
+        if (limit) {
+            query = query.limit(parseInt(limit));
+        }
+
+        // Apply field projection (e.g., ?fields=hostname,identifier)
+        if (fields) {
+            query = query.select(fields.split(',').join(' '));
+        }
+
+        const servers = await query;
+
+        // Add metrics count for each server
+        const serversWithCounts = await Promise.all(
+            servers.map(async (server) => {
+                const metricsCount = await Metrics.countDocuments({ server_id: server._id });
+                return {
+                    ...server.toObject(),
+                    metricsCount
+                };
+            })
+        );
+
+        res.status(200).json(serversWithCounts);
     } catch (error) {
         console.error('Error fetching servers:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// GET /api/servers/:id - Return a single server by id
+// GET /api/servers/:id - Return a single server by MongoDB _id or identifier
 router.get('/servers/:id', async (req, res) => {
     const { id } = req.params;
 
-    // Validate id is a number
-    if (isNaN(id) || !Number.isInteger(Number(id))) {
-        return res.status(400).json({ error: 'Invalid id' });
-    }
-
     try {
-        const server = await Server.findOne({ id: Number(id) });
+        let server;
+
+        // Try to find by MongoDB _id first
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            server = await Server.findById(id);
+        }
+
+        // If not found, try by identifier (username@hostname)
+        if (!server) {
+            server = await Server.findOne({ identifier: id });
+        }
 
         if (!server) {
             return res.status(404).json({ error: 'Server not found' });
         }
 
-        res.status(200).json(server);
+        // Get metrics count for this server
+        const metricsCount = await Metrics.countDocuments({ server_id: server._id });
+
+        res.status(200).json({
+            ...server.toObject(),
+            metricsCount
+        });
     } catch (error) {
         console.error('Error fetching server:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// POST /api/servers - Create a new server
+// POST /api/servers - Create a new server manually
 router.post('/servers', async (req, res) => {
-    const { id, hostname, arch, os_type, release } = req.body;
+    const { hostname, username, arch, os_type, release, cpuModel, totalMemory } = req.body;
 
     // Validate required fields
-    if (!id || !hostname || !arch || !os_type || !release) {
+    if (!hostname || !username || !arch || !os_type || !release) {
         return res.status(400).json({
-            error: 'Missing required fields. Required: id, hostname, arch, os_type, release'
+            error: 'Missing required fields. Required: hostname, username, arch, os_type, release'
         });
     }
 
-    // Validate id is a number
-    if (isNaN(id) || !Number.isInteger(Number(id))) {
-        return res.status(400).json({ error: 'Invalid id. Must be an integer.' });
-    }
-
     try {
-        // Check if server with this id already exists
-        const existingServer = await Server.findOne({ id: Number(id) });
+        const identifier = `${username}@${hostname}`;
+
+        // Check if server with this identifier already exists
+        const existingServer = await Server.findOne({ identifier });
         if (existingServer) {
-            return res.status(400).json({ error: 'Server with this id already exists' });
+            return res.status(400).json({ error: 'Server with this identifier already exists' });
         }
 
         const newServer = new Server({
-            id: Number(id),
             hostname,
+            username,
+            identifier,
             arch,
             os_type,
-            release
+            release,
+            cpuModel: cpuModel || 'Unknown',
+            totalMemory: totalMemory || 0,
+            lastSeen: new Date(),
+            createdAt: new Date()
         });
 
         await newServer.save();
@@ -311,34 +456,48 @@ router.post('/servers', async (req, res) => {
     }
 });
 
-// PUT /api/servers/:id - Update an existing server by id
+// PUT /api/servers/:id - Update an existing server by MongoDB _id
 router.put('/servers/:id', async (req, res) => {
     const { id } = req.params;
-    const { hostname, arch, os_type, release } = req.body;
+    const { hostname, username, arch, os_type, release, cpuModel, totalMemory } = req.body;
 
-    // Validate id is a number
-    if (isNaN(id) || !Number.isInteger(Number(id))) {
-        return res.status(400).json({ error: 'Invalid id' });
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid server ID' });
     }
 
-    // Validate at least one field is provided
-    if (!hostname && !arch && !os_type && !release) {
+    // Build update object with provided fields only
+    const updateFields = {};
+    if (hostname) updateFields.hostname = hostname;
+    if (username) updateFields.username = username;
+    if (arch) updateFields.arch = arch;
+    if (os_type) updateFields.os_type = os_type;
+    if (release) updateFields.release = release;
+    if (cpuModel) updateFields.cpuModel = cpuModel;
+    if (totalMemory !== undefined) updateFields.totalMemory = totalMemory;
+
+    // Update identifier if hostname or username changed
+    if (hostname || username) {
+        const server = await Server.findById(id);
+        if (!server) {
+            return res.status(404).json({ error: 'Server not found' });
+        }
+        const newHostname = hostname || server.hostname;
+        const newUsername = username || server.username;
+        updateFields.identifier = `${newUsername}@${newHostname}`;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
         return res.status(400).json({
-            error: 'At least one field must be provided for update (hostname, arch, os_type, release)'
+            error: 'At least one field must be provided for update'
         });
     }
 
     try {
-        const updateData = {};
-        if (hostname) updateData.hostname = hostname;
-        if (arch) updateData.arch = arch;
-        if (os_type) updateData.os_type = os_type;
-        if (release) updateData.release = release;
-
-        const updatedServer = await Server.findOneAndUpdate(
-            { id: Number(id) },
-            updateData,
-            { new: true } // Return the updated document
+        const updatedServer = await Server.findByIdAndUpdate(
+            id,
+            { $set: updateFields },
+            { new: true, runValidators: true }
         );
 
         if (!updatedServer) {
@@ -352,25 +511,86 @@ router.put('/servers/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/servers/:id - Delete a server by id
+// DELETE /api/servers/:id - Delete a server by MongoDB _id
 router.delete('/servers/:id', async (req, res) => {
     const { id } = req.params;
 
-    // Validate id is a number
-    if (isNaN(id) || !Number.isInteger(Number(id))) {
-        return res.status(400).json({ error: 'Invalid id' });
+    // Validate MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ error: 'Invalid server ID' });
     }
 
     try {
-        const deletedServer = await Server.findOneAndDelete({ id: Number(id) });
+        const deletedServer = await Server.findByIdAndDelete(id);
 
         if (!deletedServer) {
             return res.status(404).json({ error: 'Server not found' });
         }
 
-        res.status(200).json({ message: 'Server deleted successfully', server: deletedServer });
+        // Optionally delete all metrics associated with this server
+        const deletedMetrics = await Metrics.deleteMany({ server_id: id });
+        console.log(`Deleted ${deletedMetrics.deletedCount} metrics for server ${deletedServer.identifier}`);
+
+        res.status(200).json({
+            message: 'Server deleted successfully',
+            server: deletedServer,
+            metricsDeleted: deletedMetrics.deletedCount
+        });
     } catch (error) {
         console.error('Error deleting server:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// GET /api/servers/:id/metrics - Get metrics for a specific server
+router.get('/servers/:id/metrics', async (req, res) => {
+    const { id } = req.params;
+    const { limit, since } = req.query;
+
+    try {
+        let server;
+
+        // Find server by _id or identifier
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            server = await Server.findById(id);
+        } else {
+            server = await Server.findOne({ identifier: id });
+        }
+
+        if (!server) {
+            return res.status(404).json({ error: 'Server not found' });
+        }
+
+        // Build query
+        let query = Metrics.find({ server_id: server._id }).sort({ timestamp: -1 });
+
+        // Filter by time if 'since' parameter provided (minutes ago)
+        if (since) {
+            const sinceDate = new Date(Date.now() - parseInt(since) * 60 * 1000);
+            query = query.where('timestamp').gte(sinceDate);
+        }
+
+        // Apply limit
+        if (limit) {
+            query = query.limit(parseInt(limit));
+        } else {
+            query = query.limit(100); // Default limit
+        }
+
+        const metrics = await query;
+
+        res.status(200).json({
+            server: {
+                _id: server._id,
+                identifier: server.identifier,
+                hostname: server.hostname,
+                username: server.username
+            },
+            count: metrics.length,
+            metrics
+        });
+    } catch (error) {
+        console.error('Error fetching server metrics:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

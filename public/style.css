@@ -21,19 +21,7 @@ body {
     background-color: var(--bg-dark-custom) !important;
 }
 
-.bg-custom {
-    background-color: var(--bg-custom) !important;
-}
-
-.bg-light-custom {
-    background-color: var(--bg-light-custom) !important;
-}
-
-/* Shadows */
-.shadow {
-    box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 15px 0px;
-}
-
+/* Shadow for about page cards */
 .shadow-89 {
     box-shadow:
             rgba(0, 0, 0, 0.4) 0px 2px 4px,
@@ -41,18 +29,18 @@ body {
             rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
 }
 
-.border-radius-2rem {
-    border-radius: 2rem;
-}
 
 /* Full-width dashboard with constraints */
-#dashboard-animated {
+#dashboard-animated,
+#machines-animated {
     max-width: 1920px;
     margin: 0 auto;
 }
 
 /* Better animation - slide from below with fade and slight scale */
-#dashboard-animated.animate-in {
+#dashboard-animated.animate-in,
+#machines-animated.animate-in,
+.page-animated.animate-in {
     animation: slideUpFade 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
@@ -89,7 +77,12 @@ body::before {
 /* Animated content */
 
 #logo-animated {
+    width: 48px;
+    height: 48px;
     transition: transform 1s ease;
+    /* Prevent flash of alt text */
+    object-fit: contain;
+    display: block;
 }
 
 #logo-animated:hover {

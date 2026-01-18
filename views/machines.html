@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Search Results</title>
+    <title>Machines - System Monitoring Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -24,8 +24,8 @@
             <div id="Navbar" class="navbar-collapse collapse">
                 <ul class="navbar-nav ms-auto fs-4">
                     <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light" href="/machines">Machines</a></li>
-                    <li class="nav-item"><a class="nav-link fw-light" href="/">Settings</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light active" href="/machines">Machines</a></li>
+                    <li class="nav-item"><a class="nav-link fw-light" href="/settings">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
                     <li class="nav-item">
@@ -39,23 +39,20 @@
     </nav>
 </div>
 
-<!-- Search Results -->
-<div class="container my-4">
-    <h1>Search Results</h1>
-    <p class="fs-4">You searched for: <strong id="search-query"></strong></p>
-    <p class="text-muted">This is a placeholder search page. In the future, this will search through system metrics, logs, or other project data.</p>
-    <a href="/" class="btn btn-primary">Back to Home</a>
+<!-- Machines Container -->
+<div class="container-fluid px-4 my-5" id="machines-animated">
+    <h1 class="mb-4">
+        <i class="bi bi-hdd-network me-3"></i>
+        Monitored Machines
+    </h1>
+
+    <div id="machines-container">
+        <p class="text-muted">Loading machines...</p>
+    </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-<script>
-    // Get query parameter from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const query = urlParams.get('q');
-    if (query) {
-        document.getElementById('search-query').textContent = query;
-    }
-</script>
+<script src="/machines.js"></script>
+<script src="/theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
 </body>
 </html>
-
