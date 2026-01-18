@@ -165,8 +165,6 @@ The home page (`/`) includes an interactive API Endpoints tile with clickable li
 | GET | `/contact` | Contact form page |
 | GET | `/machines` | Server management page showing all monitored servers |
 | GET | `/settings` | Settings page with theme toggle |
-| GET | `/search?q=QUERY` | Search page (requires query parameter `q`) |
-| GET | `/item/:id` | Item detail page (route parameter example) |
 | POST | `/contact` | Handle contact form submission (saves to JSON file) |
 
 </details>
