@@ -54,22 +54,224 @@ const metricsSchema = new mongoose.Schema({
 
 const Metrics = mongoose.model('Metrics', metricsSchema);
 
+// Helper function to check if we're running in hosted environment (not localhost)
+function isHostedEnvironment() {
+    const hostname = os.hostname();
+    // Check if we're on Render or similar hosting platforms
+    return process.env.RENDER ||
+           process.env.RAILWAY_ENVIRONMENT ||
+           process.env.VERCEL ||
+           hostname.includes('render') ||
+           hostname.includes('railway') ||
+           hostname.includes('vercel');
+}
+
+// Check if running in hosted mode
+router.get('/environment', (req, res) => {
+    res.json({
+        isHosted: isHostedEnvironment(),
+        hostname: os.hostname()
+    });
+});
+
+// POST endpoint for agents to push metrics
+router.post('/agent-metrics', async (req, res) => {
+    try {
+        const {
+            cpuLoad, freeMem, totalMem, uptime, networkInterfaces,
+            hostname, username, arch, os_type, release, cpuModel
+        } = req.body;
+
+        // Validate required fields
+        if (!hostname || !username || !cpuLoad || freeMem === undefined || totalMem === undefined) {
+            return res.status(400).json({
+                error: 'Missing required fields',
+                required: ['hostname', 'username', 'cpuLoad', 'freeMem', 'totalMem']
+            });
+        }
+
+        const identifier = `${username}@${hostname}`;
+
+        // Find or create server entry
+        let server = await Server.findOne({ identifier });
+
+        if (!server) {
+            server = new Server({
+                hostname,
+                username,
+                identifier,
+                arch: arch || 'unknown',
+                os_type: os_type || 'unknown',
+                release: release || 'unknown',
+                cpuModel: cpuModel || 'Unknown',
+                totalMemory: totalMem,
+                lastSeen: new Date(),
+                createdAt: new Date()
+            });
+            await server.save();
+            console.log(`New agent registered: ${identifier}`);
+        } else {
+            // Update server information
+            const currentRelease = release || server.release;
+            const currentCpuModel = cpuModel || server.cpuModel;
+            const currentTotalMemory = totalMem || server.totalMemory;
+
+            let updated = false;
+
+            if (server.release !== currentRelease) {
+                server.release = currentRelease;
+                updated = true;
+            }
+
+            if (server.cpuModel !== currentCpuModel) {
+                server.cpuModel = currentCpuModel;
+                updated = true;
+            }
+
+            if (server.totalMemory !== currentTotalMemory) {
+                server.totalMemory = currentTotalMemory;
+                updated = true;
+            }
+
+            server.lastSeen = new Date();
+            await server.save();
+
+            if (updated) {
+                console.log(`Agent ${identifier}: Information updated`);
+            }
+        }
+
+        // Save metrics
+        const metrics = new Metrics({
+            server_id: server._id,
+            cpuLoad,
+            freeMem,
+            totalMem,
+            uptime: uptime || 0,
+            networkInterfaces: networkInterfaces || {},
+            timestamp: new Date()
+        });
+
+        await metrics.save();
+
+        res.status(201).json({
+            message: 'Metrics received successfully',
+            server_id: server._id,
+            identifier
+        });
+    } catch (error) {
+        console.error('Error receiving agent metrics:', error);
+        res.status(500).json({ error: 'Failed to save metrics' });
+    }
+});
+
 // Static system stats
-router.get('/static-stats', (req, res) => {
-    const data = {
-        arch: os.arch(),
-        release: os.release(),
-        type: normalizeOSType(os.type()),
-        hostname: os.hostname(),
-        userInfo: os.userInfo(),
-        cpus: os.cpus(),
-    };
-    res.json(data);
+router.get('/static-stats', async (req, res) => {
+    try {
+        const hosted = isHostedEnvironment();
+
+        if (hosted) {
+            // In hosted mode, return static info from database
+            const { server_id } = req.query;
+
+            let server;
+            if (server_id) {
+                if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                    return res.status(400).json({ error: 'Invalid server_id' });
+                }
+                server = await Server.findById(server_id);
+            } else {
+                // Get the most recently seen server
+                server = await Server.findOne().sort({ lastSeen: -1 });
+            }
+
+            if (!server) {
+                return res.status(404).json({
+                    error: 'No server data available',
+                    message: 'Waiting for agent connection.',
+                    hosted: true
+                });
+            }
+
+            // Return static info in expected format
+            return res.json({
+                arch: server.arch,
+                release: server.release,
+                type: server.os_type,
+                hostname: server.hostname,
+                userInfo: { username: server.username },
+                cpus: [{ model: server.cpuModel }],
+                hosted: true
+            });
+        }
+
+        // Local mode - return current machine info
+        const data = {
+            arch: os.arch(),
+            release: os.release(),
+            type: normalizeOSType(os.type()),
+            hostname: os.hostname(),
+            userInfo: os.userInfo(),
+            cpus: os.cpus(),
+            hosted: false
+        };
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching static stats:', error);
+        res.status(500).json({ error: 'Failed to fetch static stats' });
+    }
 });
 
 // Dynamic system stats (saves to database with server association)
+// In hosted mode, returns latest metrics from database instead of collecting locally
 router.get('/stats', async (req, res) => {
     try {
+        const hosted = isHostedEnvironment();
+
+        if (hosted) {
+            // In hosted mode, return the latest metrics from database
+            // Allow optional server_id query parameter to select specific server
+            const { server_id } = req.query;
+
+            let query = {};
+            if (server_id) {
+                if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                    return res.status(400).json({ error: 'Invalid server_id' });
+                }
+                query.server_id = server_id;
+            }
+
+            // Get latest metrics
+            const latestMetrics = await Metrics.findOne(query)
+                .sort({ timestamp: -1 })
+                .populate('server_id');
+
+            if (!latestMetrics) {
+                return res.status(404).json({
+                    error: 'No metrics available',
+                    message: 'Waiting for agent connection. Please run the agent script on your machine.',
+                    hosted: true
+                });
+            }
+
+            // Return metrics in expected format
+            return res.json({
+                cpuLoad: latestMetrics.cpuLoad,
+                freeMem: latestMetrics.freeMem,
+                totalMem: latestMetrics.totalMem,
+                uptime: latestMetrics.uptime,
+                networkInterfaces: latestMetrics.networkInterfaces,
+                timestamp: latestMetrics.timestamp,
+                server: latestMetrics.server_id ? {
+                    identifier: latestMetrics.server_id.identifier,
+                    hostname: latestMetrics.server_id.hostname,
+                    username: latestMetrics.server_id.username
+                } : null,
+                hosted: true
+            });
+        }
+
+        // Local mode - collect metrics from current machine
         const allInterfaces = os.networkInterfaces();
 
         // Filter interfaces by name (enp8s, tailscale, wlan)
@@ -165,6 +367,7 @@ router.get('/stats', async (req, res) => {
                 hostname,
                 username
             },
+            hosted: false
         };
 
         res.json(response);
