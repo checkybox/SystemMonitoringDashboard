@@ -76,37 +76,41 @@ async function loadStats() {
     }
 }
 
-// Flag to track if banner is already shown or being shown
+// Flag to track if banner is already shown
 let bannerShown = false;
-let bannerProcessing = false;
+// Store the promise to ensure only one execution
+let bannerPromise = null;
 
 // Show "waiting for agents" message when in hosted mode with no connected agents
 async function showWaitingForAgents() {
-    // Don't show banner if it's already shown or being processed
-    if (bannerShown || bannerProcessing) {
+    // If already shown, return immediately
+    if (bannerShown) {
         return;
     }
 
-    const existingBanner = document.getElementById('waiting-banner');
+    // If already processing, return the existing promise
+    if (bannerPromise) {
+        return bannerPromise;
+    }
 
-    // Double check - if banner already exists, mark as shown and return
+    // Check if banner already exists in DOM
+    const existingBanner = document.getElementById('waiting-banner');
     if (existingBanner) {
         bannerShown = true;
         return;
     }
 
-    // Set processing flag to prevent concurrent calls
-    bannerProcessing = true;
+    // Create and store the promise
+    bannerPromise = (async () => {
+        const container = document.querySelector('.grid-stack');
+        if (!container) return;
 
-    const container = document.querySelector('.grid-stack');
-    if (container) {
         // Stop all interval timers to prevent continuous calling
         clearAllIntervals();
-
         bannerShown = true;
 
-        // Check how many servers are ONLINE (seen in last 2 minutes)
         try {
+            // Check how many servers are ONLINE (seen in last 2 minutes)
             const response = await fetch('/api/servers');
             const allServers = await response.json();
 
@@ -152,8 +156,6 @@ async function showWaitingForAgents() {
             }
 
             container.parentElement.insertBefore(banner, container);
-
-            // Hide the grid-stack container
             container.style.display = 'none';
         } catch (error) {
             console.error('Error checking servers:', error);
@@ -173,10 +175,10 @@ async function showWaitingForAgents() {
             `;
             container.parentElement.insertBefore(banner, container);
             container.style.display = 'none';
-        } finally {
-            bannerProcessing = false;
         }
-    }
+    })();
+
+    return bannerPromise;
 }
 
 // Store interval IDs to clear them when needed
@@ -508,15 +510,10 @@ getDiskUsage()
 loadNetworkStats()
 loadCpuPerCore()
 
-// Wait for initial async functions to complete before starting intervals
-// This prevents the banner from showing twice
-setTimeout(() => {
-    if (!bannerShown) {
-        intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second
-        intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
-        intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
-    }
-}, 1500); // Wait 1.5 seconds for initial load to complete
+// Start intervals - they will be cleared if banner needs to be shown
+intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second
+intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
+intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
 
 // Initialize Bootstrap tooltips
 document.addEventListener('DOMContentLoaded', function() {
