@@ -202,24 +202,29 @@ router.get('/static-stats', async (req, res) => {
         const hosted = isHostedEnvironment();
 
         if (hosted) {
-            // In hosted mode, return static info from database
+            // In hosted mode, REQUIRE server_id parameter
             const { server_id } = req.query;
 
-            let server;
-            if (server_id) {
-                if (!mongoose.Types.ObjectId.isValid(server_id)) {
-                    return res.status(400).json({ error: 'Invalid server_id' });
-                }
-                server = await Server.findById(server_id);
-            } else {
-                // Get the most recently seen server
-                server = await Server.findOne().sort({ lastSeen: -1 });
+            if (!server_id) {
+                // No server_id provided - return error to trigger agent selection
+                return res.status(404).json({
+                    error: 'No server selected',
+                    message: 'Please select a server to monitor.',
+                    hosted: true,
+                    requiresSelection: true
+                });
             }
+
+            if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                return res.status(400).json({ error: 'Invalid server_id' });
+            }
+
+            const server = await Server.findById(server_id);
 
             if (!server) {
                 return res.status(404).json({
-                    error: 'No server data available',
-                    message: 'Waiting for agent connection.',
+                    error: 'Server not found',
+                    message: 'The selected server does not exist.',
                     hosted: true
                 });
             }
@@ -260,27 +265,32 @@ router.get('/stats', async (req, res) => {
         const hosted = isHostedEnvironment();
 
         if (hosted) {
-            // In hosted mode, return the latest metrics from database
-            // Allow optional server_id query parameter to select specific server
+            // In hosted mode, REQUIRE server_id parameter
             const { server_id } = req.query;
 
-            let query = {};
-            if (server_id) {
-                if (!mongoose.Types.ObjectId.isValid(server_id)) {
-                    return res.status(400).json({ error: 'Invalid server_id' });
-                }
-                query.server_id = server_id;
+            if (!server_id) {
+                // No server_id provided - return error to trigger agent selection
+                return res.status(404).json({
+                    error: 'No server selected',
+                    message: 'Please select a server to monitor.',
+                    hosted: true,
+                    requiresSelection: true
+                });
             }
 
-            // Get latest metrics
-            const latestMetrics = await Metrics.findOne(query)
+            if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                return res.status(400).json({ error: 'Invalid server_id' });
+            }
+
+            // Get latest metrics for the specified server
+            const latestMetrics = await Metrics.findOne({ server_id: server_id })
                 .sort({ timestamp: -1 })
                 .populate('server_id');
 
             if (!latestMetrics) {
                 return res.status(404).json({
-                    error: 'No metrics available',
-                    message: 'Waiting for agent connection. Please run the agent script on your machine.',
+                    error: 'No metrics available for this server',
+                    message: 'The agent may not be sending data.',
                     hosted: true
                 });
             }
@@ -428,18 +438,18 @@ router.get('/disk-usage', async (req, res) => {
         const hosted = isHostedEnvironment();
 
         if (hosted) {
-            // In hosted mode, return disk data from latest metrics
+            // In hosted mode, REQUIRE server_id parameter
             const { server_id } = req.query;
 
-            let query = {};
-            if (server_id) {
-                if (!mongoose.Types.ObjectId.isValid(server_id)) {
-                    return res.status(400).json({ error: 'Invalid server_id' });
-                }
-                query.server_id = server_id;
+            if (!server_id) {
+                return res.status(404).send('No server selected');
             }
 
-            const latestMetrics = await Metrics.findOne(query)
+            if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                return res.status(400).json({ error: 'Invalid server_id' });
+            }
+
+            const latestMetrics = await Metrics.findOne({ server_id: server_id })
                 .sort({ timestamp: -1 });
 
             if (!latestMetrics || !latestMetrics.diskUsage) {
@@ -473,18 +483,18 @@ router.get('/network-stats', async (req, res) => {
         const hosted = isHostedEnvironment();
 
         if (hosted) {
-            // In hosted mode, return network stats from latest metrics
+            // In hosted mode, REQUIRE server_id parameter
             const { server_id } = req.query;
 
-            let query = {};
-            if (server_id) {
-                if (!mongoose.Types.ObjectId.isValid(server_id)) {
-                    return res.status(400).json({ error: 'Invalid server_id' });
-                }
-                query.server_id = server_id;
+            if (!server_id) {
+                return res.json({}); // Return empty if no server selected
             }
 
-            const latestMetrics = await Metrics.findOne(query)
+            if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                return res.status(400).json({ error: 'Invalid server_id' });
+            }
+
+            const latestMetrics = await Metrics.findOne({ server_id: server_id })
                 .sort({ timestamp: -1 });
 
             if (!latestMetrics || !latestMetrics.networkStats) {
@@ -549,18 +559,21 @@ router.get('/cpu-per-core', async (req, res) => {
         const hosted = isHostedEnvironment();
 
         if (hosted) {
-            // In hosted mode, return CPU data from latest metrics
+            // In hosted mode, REQUIRE server_id parameter
             const { server_id } = req.query;
 
-            let query = {};
-            if (server_id) {
-                if (!mongoose.Types.ObjectId.isValid(server_id)) {
-                    return res.status(400).json({ error: 'Invalid server_id' });
-                }
-                query.server_id = server_id;
+            if (!server_id) {
+                return res.status(404).json({
+                    error: 'No server selected',
+                    hosted: true
+                });
             }
 
-            const latestMetrics = await Metrics.findOne(query)
+            if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                return res.status(400).json({ error: 'Invalid server_id' });
+            }
+
+            const latestMetrics = await Metrics.findOne({ server_id: server_id })
                 .sort({ timestamp: -1 });
 
             if (!latestMetrics || !latestMetrics.cpus) {

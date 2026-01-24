@@ -12,9 +12,9 @@ async function loadStaticStats() {
 
         if (!res.ok) {
             const error = await res.json();
-            if (error.hosted) {
+            if (error.hosted || error.requiresSelection) {
                 // Show waiting for agents message
-                showWaitingForAgents();
+                await showWaitingForAgents();
                 return;
             }
             throw new Error(error.error || 'Failed to load static stats');
@@ -42,9 +42,9 @@ async function loadStats() {
 
         if (!res.ok) {
             const error = await res.json();
-            if (error.hosted) {
+            if (error.hosted || error.requiresSelection) {
                 // Show waiting for agents message
-                showWaitingForAgents();
+                await showWaitingForAgents();
                 return;
             }
             throw new Error(error.error || 'Failed to load stats');

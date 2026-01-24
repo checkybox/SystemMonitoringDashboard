@@ -24,8 +24,8 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 // Configuration
-const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:3000';
-const PUSH_INTERVAL = parseInt(process.env.PUSH_INTERVAL || '30') * 1000; // Convert to milliseconds
+const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://systemmonitoringdashboard-d1bh.onrender.com/';
+const PUSH_INTERVAL = parseInt(process.env.PUSH_INTERVAL || '1') * 1000; // Convert to milliseconds
 
 // Helper function to normalize OS type
 function normalizeOSType(osType) {
