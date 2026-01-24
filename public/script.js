@@ -508,7 +508,7 @@ getDiskUsage()
 loadNetworkStats()
 loadCpuPerCore()
 
-// Wait a bit before starting intervals to ensure banner check completes
+// Wait for initial async functions to complete before starting intervals
 // This prevents the banner from showing twice
 setTimeout(() => {
     if (!bannerShown) {
@@ -516,7 +516,7 @@ setTimeout(() => {
         intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
         intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
     }
-}, 500); // Wait 500ms for initial load to complete
+}, 1500); // Wait 1.5 seconds for initial load to complete
 
 // Initialize Bootstrap tooltips
 document.addEventListener('DOMContentLoaded', function() {
