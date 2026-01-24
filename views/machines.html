@@ -41,18 +41,99 @@
 
 <!-- Machines Container -->
 <div class="container-fluid px-4 my-5" id="machines-animated">
-    <h1 class="mb-4">
-        <i class="bi bi-hdd-network me-3"></i>
-        Monitored Machines
-    </h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">
+            <i class="bi bi-hdd-network me-3"></i>
+            Monitored Machines
+        </h1>
+        <button class="btn btn-primary" onclick="openCreateModal()">
+            <i class="bi bi-plus-circle me-2"></i>
+            Add New Machine
+        </button>
+    </div>
 
     <div id="machines-container">
         <p class="text-muted">Loading machines...</p>
     </div>
 </div>
 
-<script src="/machines.js"></script>
-<script src="/theme.js"></script>
+<!-- Create/Edit Modal -->
+<div class="modal fade" id="machineModal" tabindex="-1" aria-labelledby="machineModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="machineModalLabel">Add New Machine</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="machineForm">
+                    <input type="hidden" id="machineId" value="">
+
+                    <div class="mb-3">
+                        <label for="hostname" class="form-label">Hostname <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="hostname" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="arch" class="form-label">Architecture <span class="text-danger">*</span></label>
+                        <select class="form-select" id="arch" required>
+                            <option value="">Select architecture...</option>
+                            <option value="x64">x64</option>
+                            <option value="x86">x86</option>
+                            <option value="arm">ARM</option>
+                            <option value="arm64">ARM64</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="os_type" class="form-label">OS Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="os_type" required>
+                            <option value="">Select OS...</option>
+                            <option value="Linux">Linux</option>
+                            <option value="Windows">Windows</option>
+                            <option value="macOS">macOS</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="release" class="form-label">Kernel/Release <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="release" placeholder="e.g., 6.18.2" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="cpuModel" class="form-label">CPU Model</label>
+                        <input type="text" class="form-control" id="cpuModel" placeholder="Optional">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="totalMemory" class="form-label">Total Memory (GB)</label>
+                        <input type="number" class="form-control" id="totalMemory" placeholder="Optional" step="0.01">
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <small>Fields marked with <span class="text-danger">*</span> are required</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveMachine()">
+                    <i class="bi bi-save me-1"></i>
+                    Save Machine
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<script src="/machines.js?v=20250119-4"></script>
+<script src="/theme.js"></script>
 </body>
 </html>

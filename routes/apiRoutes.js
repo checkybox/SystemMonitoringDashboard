@@ -5,6 +5,16 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
+// Helper function to normalize OS type to plain text
+function normalizeOSType(osType) {
+    const osMap = {
+        'Darwin': 'macOS',
+        'Windows_NT': 'Windows',
+        'Linux': 'Linux'
+    };
+    return osMap[osType] || osType;
+}
+
 // Define Server schema and model for CRUD operations
 const serverSchema = new mongoose.Schema({
     hostname: { type: String, required: true },
@@ -49,7 +59,7 @@ router.get('/static-stats', (req, res) => {
     const data = {
         arch: os.arch(),
         release: os.release(),
-        type: os.type(),
+        type: normalizeOSType(os.type()),
         hostname: os.hostname(),
         userInfo: os.userInfo(),
         cpus: os.cpus(),
@@ -85,7 +95,7 @@ router.get('/stats', async (req, res) => {
                 username,
                 identifier,
                 arch: os.arch(),
-                os_type: os.type(),
+                os_type: normalizeOSType(os.type()),
                 release: os.release(),
                 cpuModel: os.cpus()[0]?.model || 'Unknown',
                 totalMemory: os.totalmem(),
@@ -130,28 +140,17 @@ router.get('/stats', async (req, res) => {
             await server.save();
         }
 
-        // Check if we already saved metrics in the last second to prevent duplicates from multiple tabs
-        const oneSecondAgo = new Date(Date.now() - 1000);
-        const recentMetric = await Metrics.findOne({
+        const metrics = new Metrics({
             server_id: server._id,
-            timestamp: { $gte: oneSecondAgo }
+            cpuLoad: os.loadavg(),
+            freeMem: os.freemem(),
+            totalMem: os.totalmem(),
+            uptime: os.uptime(),
+            networkInterfaces: filteredInterfaces,
+            timestamp: new Date()
         });
-
-        // Only save new metrics if none exist in the last second
-        if (!recentMetric) {
-            // Create metrics with server_id reference
-            const metrics = new Metrics({
-                server_id: server._id,
-                cpuLoad: os.loadavg(),
-                freeMem: os.freemem(),
-                totalMem: os.totalmem(),
-                uptime: os.uptime(),
-                networkInterfaces: filteredInterfaces,
-                timestamp: new Date()
-            });
-
-            await metrics.save();
-        }
+ 
+        await metrics.save();
 
         // Always return current stats (whether we saved or not)
         const response = {
@@ -166,7 +165,6 @@ router.get('/stats', async (req, res) => {
                 hostname,
                 username
             },
-            saved: !recentMetric // Indicate if we saved this data point
         };
 
         res.json(response);
