@@ -76,25 +76,54 @@ async function loadStats() {
     }
 }
 
+// Flag to track if banner is already shown
+let bannerShown = false;
+
 // Show "waiting for agents" message when in hosted mode with no connected agents
 async function showWaitingForAgents() {
+    // Don't show banner if it's already shown
+    if (bannerShown) {
+        return;
+    }
+
     const container = document.querySelector('.grid-stack');
-    if (container && !document.getElementById('waiting-banner')) {
-        // Check how many servers are connected
+    const existingBanner = document.getElementById('waiting-banner');
+
+    // Double check - if banner already exists, don't create another
+    if (existingBanner) {
+        bannerShown = true;
+        return;
+    }
+
+    if (container) {
+        // Stop all interval timers to prevent continuous calling
+        clearAllIntervals();
+
+        bannerShown = true;
+
+        // Check how many servers are ONLINE (seen in last 2 minutes)
         try {
             const response = await fetch('/api/servers');
-            const servers = await response.json();
+            const allServers = await response.json();
+
+            // Filter to only online servers (seen within last 2 minutes)
+            const now = new Date();
+            const onlineServers = allServers.filter(server => {
+                const lastSeen = new Date(server.lastSeen);
+                const diffMinutes = Math.floor((now - lastSeen) / 60000);
+                return diffMinutes < 2;
+            });
 
             const banner = document.createElement('div');
             banner.id = 'waiting-banner';
 
-            if (servers.length === 0) {
-                // No agents connected
+            if (onlineServers.length === 0) {
+                // No agents online
                 banner.className = 'alert alert-warning text-center p-5 m-4';
                 banner.innerHTML = `
                     <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block text-warning"></i>
                     <h3>Waiting for Agent Connection</h3>
-                    <p class="mb-3">No monitoring agents are currently connected to this dashboard.</p>
+                    <p class="mb-3">No monitoring agents are currently online.</p>
                     <p class="text-muted">To monitor your machines, please run the agent script on each machine you want to monitor.</p>
                     <p class="text-muted">The agent script is available in the repository. Check the README for setup instructions.</p>
                     <div class="mt-4">
@@ -104,11 +133,11 @@ async function showWaitingForAgents() {
                     </div>
                 `;
             } else {
-                // Agents are connected but no server_id selected
+                // Agents are online but no server_id selected
                 banner.className = 'alert alert-info text-center p-5 m-4';
                 banner.innerHTML = `
                     <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
-                    <h3>${servers.length} Agent${servers.length > 1 ? 's' : ''} Connected</h3>
+                    <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
                     <p class="mb-3">Please select a machine to monitor from the Machines page.</p>
                     <div class="mt-4">
                         <a href="/machines" class="btn btn-primary">
@@ -142,6 +171,14 @@ async function showWaitingForAgents() {
             container.style.display = 'none';
         }
     }
+}
+
+// Store interval IDs to clear them when needed
+const intervalIds = [];
+
+function clearAllIntervals() {
+    intervalIds.forEach(id => clearInterval(id));
+    intervalIds.length = 0; // Clear the array
 }
 
 // Store previous network stats for speed calculation
@@ -465,9 +502,12 @@ getDiskUsage()
 loadNetworkStats()
 loadCpuPerCore()
 
-setInterval(loadStats, 1000) // auto-refresh every 1 second
-setInterval(loadNetworkStats, 1000) // update network stats every 1 second
-setInterval(loadCpuPerCore, 1000) // update CPU per-core stats every 1 second
+// Only start intervals if not showing banner
+if (!bannerShown) {
+    intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second
+    intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
+    intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
+}
 
 // Initialize Bootstrap tooltips
 document.addEventListener('DOMContentLoaded', function() {

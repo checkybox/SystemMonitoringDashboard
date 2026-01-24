@@ -75,11 +75,27 @@ async function getNetworkStats() {
             const parts = line.split(/\s+/);
             const interfaceName = parts[0].replace(':', '');
 
-            // Filter for specific interfaces
+            // Filter for physical and useful interfaces only
+            // Exclude: lo (loopback), veth* (docker), docker*, virbr* (libvirt), br-* (bridges)
+            const isVirtualInterface =
+                interfaceName === 'lo' ||
+                interfaceName.startsWith('veth') ||
+                interfaceName.startsWith('docker') ||
+                interfaceName.startsWith('virbr') ||
+                interfaceName.startsWith('br-') ||
+                interfaceName.startsWith('vnet');
+
+            if (isVirtualInterface) {
+                continue; // Skip this interface
+            }
+
+            // Include physical/useful interfaces
             if (interfaceName.includes('enp') ||
                 interfaceName.includes('tailscale') ||
                 interfaceName.includes('wlan') ||
-                interfaceName.includes('eth')) {
+                interfaceName.includes('eth') ||
+                interfaceName.startsWith('wl') ||
+                interfaceName.match(/^en[ops]\d+/)) {
                 stats[interfaceName] = {
                     rxBytes: parseInt(parts[1]) || 0,
                     rxPackets: parseInt(parts[2]) || 0,
@@ -100,13 +116,29 @@ async function getNetworkStats() {
 async function collectMetrics() {
     const allInterfaces = os.networkInterfaces();
 
-    // Filter interfaces by name (enp, tailscale, wlan, eth, en)
+    // Filter interfaces - exclude virtual/unwanted interfaces
     const filteredInterfaces = {};
     Object.keys(allInterfaces).forEach(name => {
+        // Skip virtual interfaces
+        const isVirtualInterface =
+            name === 'lo' ||
+            name.startsWith('veth') ||
+            name.startsWith('docker') ||
+            name.startsWith('virbr') ||
+            name.startsWith('br-') ||
+            name.startsWith('vnet');
+
+        if (isVirtualInterface) {
+            return; // Skip this interface
+        }
+
+        // Include physical/useful interfaces
         if (name.includes('enp') ||
             name.includes('tailscale') ||
             name.includes('wlan') ||
             name.includes('eth') ||
+            name.startsWith('wl') ||
+            name.match(/^en[ops]\d+/) ||
             name.match(/^en\d+$/)) {
             filteredInterfaces[name] = allInterfaces[name];
         }

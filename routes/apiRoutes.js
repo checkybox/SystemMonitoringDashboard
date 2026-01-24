@@ -534,8 +534,26 @@ router.get('/network-stats', async (req, res) => {
                 const parts = line.split(/\s+/);
                 const interfaceName = parts[0].replace(':', '');
 
-                // Filter for specific interfaces
-                if (interfaceName.includes('enp8s') || interfaceName.includes('tailscale') || interfaceName.includes('wlan')) {
+                // Skip virtual interfaces
+                const isVirtualInterface =
+                    interfaceName === 'lo' ||
+                    interfaceName.startsWith('veth') ||
+                    interfaceName.startsWith('docker') ||
+                    interfaceName.startsWith('virbr') ||
+                    interfaceName.startsWith('br-') ||
+                    interfaceName.startsWith('vnet');
+
+                if (isVirtualInterface) {
+                    continue;
+                }
+
+                // Filter for physical/useful interfaces
+                if (interfaceName.includes('enp') ||
+                    interfaceName.includes('tailscale') ||
+                    interfaceName.includes('wlan') ||
+                    interfaceName.includes('eth') ||
+                    interfaceName.startsWith('wl') ||
+                    interfaceName.match(/^en[ops]\d+/)) {
                     stats[interfaceName] = {
                         rxBytes: parseInt(parts[1]),
                         rxPackets: parseInt(parts[2]),
