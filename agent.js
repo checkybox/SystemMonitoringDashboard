@@ -18,6 +18,10 @@
 import os from 'os';
 import https from 'https';
 import http from 'http';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 // Configuration
 const DASHBOARD_URL = process.env.DASHBOARD_URL || 'http://localhost:3000';
@@ -33,8 +37,67 @@ function normalizeOSType(osType) {
     return osMap[osType] || osType;
 }
 
+// Collect disk usage information
+async function getDiskUsage() {
+    try {
+        const { stdout } = await execAsync('df -h / | tail -n 1');
+        const parts = stdout.trim().split(/\s+/);
+
+        if (parts.length >= 5) {
+            return {
+                filesystem: parts[0],
+                size: parts[1],
+                used: parts[2],
+                available: parts[3],
+                usePercent: parts[4],
+                mountPoint: parts[5] || '/'
+            };
+        }
+    } catch (error) {
+        console.error('Error getting disk usage:', error.message);
+    }
+
+    return null;
+}
+
+// Collect network statistics from /proc/net/dev
+async function getNetworkStats() {
+    try {
+        const { stdout } = await execAsync('cat /proc/net/dev');
+        const lines = stdout.split('\n');
+        const stats = {};
+
+        // Skip first 2 header lines
+        for (let i = 2; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const parts = line.split(/\s+/);
+            const interfaceName = parts[0].replace(':', '');
+
+            // Filter for specific interfaces
+            if (interfaceName.includes('enp') ||
+                interfaceName.includes('tailscale') ||
+                interfaceName.includes('wlan') ||
+                interfaceName.includes('eth')) {
+                stats[interfaceName] = {
+                    rxBytes: parseInt(parts[1]) || 0,
+                    rxPackets: parseInt(parts[2]) || 0,
+                    txBytes: parseInt(parts[9]) || 0,
+                    txPackets: parseInt(parts[10]) || 0
+                };
+            }
+        }
+
+        return stats;
+    } catch (error) {
+        console.error('Error getting network stats:', error.message);
+        return {};
+    }
+}
+
 // Collect system metrics
-function collectMetrics() {
+async function collectMetrics() {
     const allInterfaces = os.networkInterfaces();
 
     // Filter interfaces by name (enp, tailscale, wlan, eth, en)
@@ -49,12 +112,21 @@ function collectMetrics() {
         }
     });
 
+    // Get disk usage
+    const diskUsage = await getDiskUsage();
+
+    // Get network statistics
+    const networkStats = await getNetworkStats();
+
     return {
         cpuLoad: os.loadavg(),
+        cpus: os.cpus(), // Send full CPU info including per-core times
         freeMem: os.freemem(),
         totalMem: os.totalmem(),
         uptime: os.uptime(),
         networkInterfaces: filteredInterfaces,
+        networkStats: networkStats, // RX/TX bytes for each interface
+        diskUsage: diskUsage,
         hostname: os.hostname(),
         username: os.userInfo().username,
         arch: os.arch(),
@@ -66,7 +138,7 @@ function collectMetrics() {
 
 // Push metrics to the dashboard
 async function pushMetrics() {
-    const metrics = collectMetrics();
+    const metrics = await collectMetrics();
     const data = JSON.stringify(metrics);
 
     const url = new URL(DASHBOARD_URL);

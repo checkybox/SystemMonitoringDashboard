@@ -77,28 +77,70 @@ async function loadStats() {
 }
 
 // Show "waiting for agents" message when in hosted mode with no connected agents
-function showWaitingForAgents() {
+async function showWaitingForAgents() {
     const container = document.querySelector('.grid-stack');
     if (container && !document.getElementById('waiting-banner')) {
-        const banner = document.createElement('div');
-        banner.id = 'waiting-banner';
-        banner.className = 'alert alert-info text-center p-5 m-4';
-        banner.innerHTML = `
-            <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block"></i>
-            <h3>Waiting for Agent Connection</h3>
-            <p class="mb-3">No monitoring agents are currently connected to this dashboard.</p>
-            <p class="text-muted">To monitor your machines, please run the agent script on each machine you want to monitor.</p>
-            <p class="text-muted">The agent script is available in the repository. Check the README for setup instructions.</p>
-            <div class="mt-4">
-                <button class="btn btn-primary" onclick="location.reload()">
-                    <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                </button>
-            </div>
-        `;
-        container.parentElement.insertBefore(banner, container);
+        // Check how many servers are connected
+        try {
+            const response = await fetch('/api/servers');
+            const servers = await response.json();
 
-        // Hide the grid-stack container
-        container.style.display = 'none';
+            const banner = document.createElement('div');
+            banner.id = 'waiting-banner';
+
+            if (servers.length === 0) {
+                // No agents connected
+                banner.className = 'alert alert-warning text-center p-5 m-4';
+                banner.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block text-warning"></i>
+                    <h3>Waiting for Agent Connection</h3>
+                    <p class="mb-3">No monitoring agents are currently connected to this dashboard.</p>
+                    <p class="text-muted">To monitor your machines, please run the agent script on each machine you want to monitor.</p>
+                    <p class="text-muted">The agent script is available in the repository. Check the README for setup instructions.</p>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Agents are connected but no server_id selected
+                banner.className = 'alert alert-info text-center p-5 m-4';
+                banner.innerHTML = `
+                    <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
+                    <h3>${servers.length} Agent${servers.length > 1 ? 's' : ''} Connected</h3>
+                    <p class="mb-3">Please select a machine to monitor from the Machines page.</p>
+                    <div class="mt-4">
+                        <a href="/machines" class="btn btn-primary">
+                            <i class="bi bi-list-ul me-2"></i>View Machines
+                        </a>
+                    </div>
+                `;
+            }
+
+            container.parentElement.insertBefore(banner, container);
+
+            // Hide the grid-stack container
+            container.style.display = 'none';
+        } catch (error) {
+            console.error('Error checking servers:', error);
+            // Fallback banner
+            const banner = document.createElement('div');
+            banner.id = 'waiting-banner';
+            banner.className = 'alert alert-warning text-center p-5 m-4';
+            banner.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block"></i>
+                <h3>Loading...</h3>
+                <p class="mb-3">Checking for connected agents...</p>
+                <div class="mt-4">
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                    </button>
+                </div>
+            `;
+            container.parentElement.insertBefore(banner, container);
+            container.style.display = 'none';
+        }
     }
 }
 
@@ -111,7 +153,9 @@ let previousCpuStats = null;
 
 async function loadCpuPerCore() {
     try {
-        const res = await fetch('/api/cpu-per-core');
+        const serverId = getServerIdFromUrl();
+        const url = serverId ? `/api/cpu-per-core?server_id=${serverId}` : '/api/cpu-per-core';
+        const res = await fetch(url);
         const currentStats = await res.json();
 
         if (previousCpuStats) {
@@ -285,7 +329,9 @@ function displayCpuBars(currentStats, previousStats) {
 
 async function loadNetworkStats() {
     try {
-        const res = await fetch('/api/network-stats');
+        const serverId = getServerIdFromUrl();
+        const url = serverId ? `/api/network-stats?server_id=${serverId}` : '/api/network-stats';
+        const res = await fetch(url);
         const currentStats = await res.json();
         const currentTime = Date.now();
 
@@ -390,7 +436,9 @@ async function getOsRelease() {
 }
 
 async function getDiskUsage() {
-    const res = await fetch('/api/disk-usage')
+    const serverId = getServerIdFromUrl();
+    const url = serverId ? `/api/disk-usage?server_id=${serverId}` : '/api/disk-usage';
+    const res = await fetch(url)
     const data = await res.text()
 
     // split on newlines, trim each line, remove empty lines

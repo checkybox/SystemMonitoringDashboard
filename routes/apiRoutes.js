@@ -35,6 +35,17 @@ const Server = mongoose.model('Server', serverSchema);
 const metricsSchema = new mongoose.Schema({
     server_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Server', required: true },
     cpuLoad: [Number],
+    cpus: [{
+        model: String,
+        speed: Number,
+        times: {
+            user: Number,
+            nice: Number,
+            sys: Number,
+            idle: Number,
+            irq: Number
+        }
+    }],
     freeMem: Number,
     totalMem: Number,
     uptime: Number,
@@ -48,6 +59,23 @@ const metricsSchema = new mongoose.Schema({
             internal: Boolean,
             cidr: String
         }]
+    },
+    networkStats: {
+        type: Map,
+        of: {
+            rxBytes: Number,
+            rxPackets: Number,
+            txBytes: Number,
+            txPackets: Number
+        }
+    },
+    diskUsage: {
+        filesystem: String,
+        size: String,
+        used: String,
+        available: String,
+        usePercent: String,
+        mountPoint: String
     },
     timestamp: { type: Date, default: Date.now }
 });
@@ -78,7 +106,7 @@ router.get('/environment', (req, res) => {
 router.post('/agent-metrics', async (req, res) => {
     try {
         const {
-            cpuLoad, freeMem, totalMem, uptime, networkInterfaces,
+            cpuLoad, cpus, freeMem, totalMem, uptime, networkInterfaces, networkStats, diskUsage,
             hostname, username, arch, os_type, release, cpuModel
         } = req.body;
 
@@ -145,10 +173,13 @@ router.post('/agent-metrics', async (req, res) => {
         const metrics = new Metrics({
             server_id: server._id,
             cpuLoad,
+            cpus: cpus || [],
             freeMem,
             totalMem,
             uptime: uptime || 0,
             networkInterfaces: networkInterfaces || {},
+            networkStats: networkStats || {},
+            diskUsage: diskUsage || null,
             timestamp: new Date()
         });
 
@@ -257,10 +288,12 @@ router.get('/stats', async (req, res) => {
             // Return metrics in expected format
             return res.json({
                 cpuLoad: latestMetrics.cpuLoad,
+                cpus: latestMetrics.cpus || [],
                 freeMem: latestMetrics.freeMem,
                 totalMem: latestMetrics.totalMem,
                 uptime: latestMetrics.uptime,
                 networkInterfaces: latestMetrics.networkInterfaces,
+                diskUsage: latestMetrics.diskUsage || null,
                 timestamp: latestMetrics.timestamp,
                 server: latestMetrics.server_id ? {
                     identifier: latestMetrics.server_id.identifier,
@@ -390,91 +423,209 @@ router.get('/os-release', (req, res) => {
 });
 
 // Disk usage
-router.get('/disk-usage', (req, res) => {
-    exec('df -h', (err, stdout) => {
-        if (err) {
-            console.error(err);
-            res.status(500).send('Error executing command');
-            return;
+router.get('/disk-usage', async (req, res) => {
+    try {
+        const hosted = isHostedEnvironment();
+
+        if (hosted) {
+            // In hosted mode, return disk data from latest metrics
+            const { server_id } = req.query;
+
+            let query = {};
+            if (server_id) {
+                if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                    return res.status(400).json({ error: 'Invalid server_id' });
+                }
+                query.server_id = server_id;
+            }
+
+            const latestMetrics = await Metrics.findOne(query)
+                .sort({ timestamp: -1 });
+
+            if (!latestMetrics || !latestMetrics.diskUsage) {
+                return res.status(404).send('No disk data available');
+            }
+
+            const disk = latestMetrics.diskUsage;
+            // Format as df -h output
+            const output = `Filesystem      Size  Used Avail Use% Mounted on\n${disk.filesystem || 'N/A'}  ${disk.size || 'N/A'}  ${disk.used || 'N/A'}   ${disk.available || 'N/A'}  ${disk.usePercent || 'N/A'} ${disk.mountPoint || '/'}`;
+            return res.send(output);
         }
-        res.send(stdout);
-    });
+
+        // Local mode - execute df command
+        exec('df -h', (err, stdout) => {
+            if (err) {
+                console.error(err);
+                res.status(500).send('Error executing command');
+                return;
+            }
+            res.send(stdout);
+        });
+    } catch (error) {
+        console.error('Error fetching disk usage:', error);
+        res.status(500).send('Error fetching disk usage');
+    }
 });
 
 // Network statistics from /proc/net/dev
-router.get('/network-stats', (req, res) => {
-    exec('cat /proc/net/dev', (err, stdout) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Error reading network statistics' });
-            return;
-        }
+router.get('/network-stats', async (req, res) => {
+    try {
+        const hosted = isHostedEnvironment();
 
-        // Parse the output
-        const lines = stdout.split('\n');
-        const stats = {};
+        if (hosted) {
+            // In hosted mode, return network stats from latest metrics
+            const { server_id } = req.query;
 
-        // Skip first 2 header lines
-        for (let i = 2; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) continue;
-
-            const parts = line.split(/\s+/);
-            const interfaceName = parts[0].replace(':', '');
-
-            // Filter for specific interfaces
-            if (interfaceName.includes('enp8s') || interfaceName.includes('tailscale') || interfaceName.includes('wlan')) {
-                stats[interfaceName] = {
-                    rxBytes: parseInt(parts[1]),
-                    rxPackets: parseInt(parts[2]),
-                    txBytes: parseInt(parts[9]),
-                    txPackets: parseInt(parts[10])
-                };
+            let query = {};
+            if (server_id) {
+                if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                    return res.status(400).json({ error: 'Invalid server_id' });
+                }
+                query.server_id = server_id;
             }
+
+            const latestMetrics = await Metrics.findOne(query)
+                .sort({ timestamp: -1 });
+
+            if (!latestMetrics || !latestMetrics.networkStats) {
+                return res.json({}); // Return empty object if no data
+            }
+
+            // Convert Map to plain object
+            const stats = {};
+            if (latestMetrics.networkStats instanceof Map) {
+                latestMetrics.networkStats.forEach((value, key) => {
+                    stats[key] = value;
+                });
+            } else {
+                Object.assign(stats, latestMetrics.networkStats);
+            }
+
+            return res.json(stats);
         }
 
-        res.json(stats);
-    });
+        // Local mode - read from /proc/net/dev
+        exec('cat /proc/net/dev', (err, stdout) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Error reading network statistics' });
+                return;
+            }
+
+            // Parse the output
+            const lines = stdout.split('\n');
+            const stats = {};
+
+            // Skip first 2 header lines
+            for (let i = 2; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const parts = line.split(/\s+/);
+                const interfaceName = parts[0].replace(':', '');
+
+                // Filter for specific interfaces
+                if (interfaceName.includes('enp8s') || interfaceName.includes('tailscale') || interfaceName.includes('wlan')) {
+                    stats[interfaceName] = {
+                        rxBytes: parseInt(parts[1]),
+                        rxPackets: parseInt(parts[2]),
+                        txBytes: parseInt(parts[9]),
+                        txPackets: parseInt(parts[10])
+                    };
+                }
+            }
+
+            res.json(stats);
+        });
+    } catch (error) {
+        console.error('Error fetching network stats:', error);
+        res.status(500).json({ error: 'Failed to fetch network stats' });
+    }
 });
 
-// Per-core CPU usage from /proc/stat
-router.get('/cpu-per-core', (req, res) => {
-    exec('cat /proc/stat', (err, stdout) => {
-        if (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Error reading CPU statistics' });
-            return;
-        }
+// Per-core CPU usage
+router.get('/cpu-per-core', async (req, res) => {
+    try {
+        const hosted = isHostedEnvironment();
 
-        const lines = stdout.split('\n');
-        const cpuData = [];
+        if (hosted) {
+            // In hosted mode, return CPU data from latest metrics
+            const { server_id } = req.query;
 
-        for (const line of lines) {
-            if (line.startsWith('cpu') && line !== lines[0]) { // Skip the first 'cpu' line (aggregate)
-                const parts = line.split(/\s+/);
-                const cpuName = parts[0];
-
-                // Parse CPU times: user, nice, system, idle, iowait, irq, softirq, steal
-                const times = {
-                    user: parseInt(parts[1]) || 0,
-                    nice: parseInt(parts[2]) || 0,
-                    system: parseInt(parts[3]) || 0,
-                    idle: parseInt(parts[4]) || 0,
-                    iowait: parseInt(parts[5]) || 0,
-                    irq: parseInt(parts[6]) || 0,
-                    softirq: parseInt(parts[7]) || 0,
-                    steal: parseInt(parts[8]) || 0
-                };
-
-                cpuData.push({
-                    name: cpuName,
-                    times: times
-                });
+            let query = {};
+            if (server_id) {
+                if (!mongoose.Types.ObjectId.isValid(server_id)) {
+                    return res.status(400).json({ error: 'Invalid server_id' });
+                }
+                query.server_id = server_id;
             }
+
+            const latestMetrics = await Metrics.findOne(query)
+                .sort({ timestamp: -1 });
+
+            if (!latestMetrics || !latestMetrics.cpus) {
+                return res.status(404).json({ error: 'No CPU data available' });
+            }
+
+            // Transform cpus data to match expected format
+            const cpuData = latestMetrics.cpus.map((cpu, index) => ({
+                name: `cpu${index}`,
+                times: {
+                    user: cpu.times.user,
+                    nice: cpu.times.nice,
+                    system: cpu.times.sys,
+                    idle: cpu.times.idle,
+                    iowait: 0,
+                    irq: cpu.times.irq || 0,
+                    softirq: 0,
+                    steal: 0
+                }
+            }));
+
+            return res.json(cpuData);
         }
 
-        res.json(cpuData);
-    });
+        // Local mode - read from /proc/stat
+        exec('cat /proc/stat', (err, stdout) => {
+            if (err) {
+                console.error(err);
+                res.status(500).json({ error: 'Error reading CPU statistics' });
+                return;
+            }
+
+            const lines = stdout.split('\n');
+            const cpuData = [];
+
+            for (const line of lines) {
+                if (line.startsWith('cpu') && line !== lines[0]) { // Skip the first 'cpu' line (aggregate)
+                    const parts = line.split(/\s+/);
+                    const cpuName = parts[0];
+
+                    // Parse CPU times: user, nice, system, idle, iowait, irq, softirq, steal
+                    const times = {
+                        user: parseInt(parts[1]) || 0,
+                        nice: parseInt(parts[2]) || 0,
+                        system: parseInt(parts[3]) || 0,
+                        idle: parseInt(parts[4]) || 0,
+                        iowait: parseInt(parts[5]) || 0,
+                        irq: parseInt(parts[6]) || 0,
+                        softirq: parseInt(parts[7]) || 0,
+                        steal: parseInt(parts[8]) || 0
+                    };
+
+                    cpuData.push({
+                        name: cpuName,
+                        times: times
+                    });
+                }
+            }
+
+            res.json(cpuData);
+        });
+    } catch (error) {
+        console.error('Error fetching CPU data:', error);
+        res.status(500).json({ error: 'Failed to fetch CPU data' });
+    }
 });
 
 
