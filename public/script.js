@@ -508,12 +508,15 @@ getDiskUsage()
 loadNetworkStats()
 loadCpuPerCore()
 
-// Only start intervals if not showing banner
-if (!bannerShown) {
-    intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second
-    intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
-    intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
-}
+// Wait a bit before starting intervals to ensure banner check completes
+// This prevents the banner from showing twice
+setTimeout(() => {
+    if (!bannerShown) {
+        intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second
+        intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
+        intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
+    }
+}, 500); // Wait 500ms for initial load to complete
 
 // Initialize Bootstrap tooltips
 document.addEventListener('DOMContentLoaded', function() {
