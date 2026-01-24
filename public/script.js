@@ -76,25 +76,29 @@ async function loadStats() {
     }
 }
 
-// Flag to track if banner is already shown
+// Flag to track if banner is already shown or being shown
 let bannerShown = false;
+let bannerProcessing = false;
 
 // Show "waiting for agents" message when in hosted mode with no connected agents
 async function showWaitingForAgents() {
-    // Don't show banner if it's already shown
-    if (bannerShown) {
+    // Don't show banner if it's already shown or being processed
+    if (bannerShown || bannerProcessing) {
         return;
     }
 
-    const container = document.querySelector('.grid-stack');
     const existingBanner = document.getElementById('waiting-banner');
 
-    // Double check - if banner already exists, don't create another
+    // Double check - if banner already exists, mark as shown and return
     if (existingBanner) {
         bannerShown = true;
         return;
     }
 
+    // Set processing flag to prevent concurrent calls
+    bannerProcessing = true;
+
+    const container = document.querySelector('.grid-stack');
     if (container) {
         // Stop all interval timers to prevent continuous calling
         clearAllIntervals();
@@ -169,6 +173,8 @@ async function showWaitingForAgents() {
             `;
             container.parentElement.insertBefore(banner, container);
             container.style.display = 'none';
+        } finally {
+            bannerProcessing = false;
         }
     }
 }
