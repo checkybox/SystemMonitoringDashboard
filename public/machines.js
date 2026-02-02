@@ -131,7 +131,8 @@ async function loadMachines() {
 
 // View metrics for a specific server
 window.viewMetrics = function(serverId) {
-    window.location.href = `/api/servers/${serverId}/metrics`;
+    // Redirect to home page with server_id parameter to view that specific server's metrics
+    window.location.href = `/?server_id=${serverId}`;
 }
 
 // Delete a machine

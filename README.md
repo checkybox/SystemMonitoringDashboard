@@ -65,6 +65,61 @@ node server.js
 http://localhost:3000
 ```
 
+## Remote Monitoring with Agents
+
+The dashboard supports two modes of operation:
+
+### Local Mode (Default)
+When running locally, the dashboard collects metrics from the machine it's running on and displays them in real-time.
+
+### Hosted Mode (Remote Monitoring)
+When deployed to a hosting platform (Render, Railway, Vercel, etc.), the dashboard automatically switches to **agent mode**. In this mode:
+
+1. The hosted dashboard shows a "Waiting for agents..." message until an agent connects
+2. You run lightweight **agent scripts** on machines you want to monitor
+3. Agents push metrics to the hosted dashboard every 30 seconds
+4. The dashboard displays metrics from all connected agents
+5. You can switch between monitored machines on the **Machines** page
+
+### Agent Setup
+
+To monitor your local machines from a hosted dashboard:
+
+1. **On each machine you want to monitor**, download the `agent.js` file:
+
+```bash
+# Download the agent script
+curl -O https://raw.githubusercontent.com/checkybox/SystemMonitoringDashboard/main/agent.js
+
+# Or if you have the repository cloned, just use the existing agent.js
+```
+
+2. **Set the dashboard URL and run the agent:**
+
+```bash
+# Set the URL of your hosted dashboard
+export DASHBOARD_URL="https://your-app.onrender.com"
+
+# Run the agent (requires Node.js)
+node agent.js
+```
+
+3. **Optional: Customize push interval (default is 30 seconds):**
+
+```bash
+# Push metrics every 15 seconds instead
+export PUSH_INTERVAL=15
+export DASHBOARD_URL="https://your-app.onrender.com"
+node agent.js
+```
+
+### Viewing Connected Agents
+
+- Navigate to the **Machines** page (`/machines`) to see all connected agents
+- Each machine shows online/offline status based on last seen time (online if seen within last 2 minutes)
+- Click **View Metrics** on any machine to see its real-time dashboard
+- Agents automatically update their system information (kernel version, CPU, memory) when changes are detected
+
 ## Database Schema
 
 **Database Used:** MongoDB
@@ -172,10 +227,26 @@ The home page (`/`) includes an interactive API Endpoints tile with clickable li
 <details>
 <summary><strong>🔧 System Monitoring API Endpoints</strong></summary>
 
+### Environment Check
+**GET** `/api/environment`
+
+Check if the dashboard is running in hosted mode or local mode.
+
+**Response (200 OK):**
+```json
+{
+  "isHosted": false,
+  "hostname": "desktop"
+}
+```
+
 ### Static System Information
 **GET** `/api/static-stats`
 
-Returns static system information that doesn't change frequently.
+Returns static system information that doesn't change frequently. Supports optional `server_id` query parameter for viewing specific server in hosted mode.
+
+**Query Parameters:**
+- `server_id` (optional): MongoDB ObjectId of the server to query
 
 **Response (200 OK):**
 ```json
@@ -188,16 +259,93 @@ Returns static system information that doesn't change frequently.
     "username": "checky",
     "homedir": "/home/checky"
   },
-  "cpus": [...]
+  "cpus": [...],
+  "hosted": false
+}
+```
+
+**Response (404 Not Found - Hosted mode, no agents):**
+```json
+{
+  "error": "No server data available",
+  "message": "Waiting for agent connection.",
+  "hosted": true
 }
 ```
 
 ### Dynamic System Metrics
 **GET** `/api/stats`
 
-Returns current system metrics and saves them to the database. Automatically creates server entry if it doesn't exist.
+Returns current system metrics and saves them to the database. In local mode, automatically creates server entry if it doesn't exist. In hosted mode, returns latest metrics from agents. Supports optional `server_id` query parameter.
+
+**Query Parameters:**
+- `server_id` (optional): MongoDB ObjectId of the server to query
 
 **Response (200 OK):**
+```json
+{
+  "cpuLoad": [2.67, 2.6, 2.39],
+  "freeMem": 21719748608,
+  "totalMem": 33568346112,
+  "uptime": 298696.74,
+  "networkInterfaces": {...},
+  "timestamp": "2026-01-18T10:30:15.000Z",
+  "server": {
+    "identifier": "checky@desktop",
+    "hostname": "desktop",
+    "username": "checky"
+  },
+  "hosted": false
+}
+```
+
+**Response (404 Not Found - Hosted mode, no agents):**
+```json
+{
+  "error": "No metrics available",
+  "message": "Waiting for agent connection. Please run the agent script on your machine.",
+  "hosted": true
+}
+```
+
+### Agent Metrics Submission
+**POST** `/api/agent-metrics`
+
+Used by monitoring agents to push metrics to the hosted dashboard. Automatically creates or updates server entry.
+
+**Request Body:**
+```json
+{
+  "hostname": "desktop",
+  "username": "checky",
+  "cpuLoad": [2.67, 2.6, 2.39],
+  "freeMem": 21719748608,
+  "totalMem": 33568346112,
+  "uptime": 298696.74,
+  "networkInterfaces": {...},
+  "arch": "x64",
+  "os_type": "Linux",
+  "release": "6.18.5-2-cachyos",
+  "cpuModel": "AMD Ryzen 5 5600 6-Core Processor"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "message": "Metrics received successfully",
+  "server_id": "677f1234abcd5678efgh9012",
+  "identifier": "checky@desktop"
+}
+```
+
+**Response (400 Bad Request):**
+```json
+{
+  "error": "Missing required fields",
+  "required": ["hostname", "username", "cpuLoad", "freeMem", "totalMem"]
+}
+```
 ```json
 {
   "cpuLoad": [2.67, 2.6, 2.39],

@@ -1,39 +1,192 @@
+// Get server_id from URL parameters (for viewing specific server metrics)
+function getServerIdFromUrl() {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('server_id');
+}
+
 async function loadStaticStats() {
-    const res = await fetch('/api/static-stats')
-    const data = await res.json()
+    try {
+        const serverId = getServerIdFromUrl();
+        const url = serverId ? `/api/static-stats?server_id=${serverId}` : '/api/static-stats';
+        const res = await fetch(url)
 
-    document.getElementById('username+hostname').textContent = data.userInfo.username + "@" + data.hostname
-    document.getElementById('os+arch').textContent = data.type + " " + "(" + data.arch + ")"
-    document.getElementById('kernel-version').textContent = data.release
+        if (!res.ok) {
+            const error = await res.json();
+            if (error.hosted || error.requiresSelection) {
+                // Show waiting for agents message
+                await showWaitingForAgents();
+                return;
+            }
+            throw new Error(error.error || 'Failed to load static stats');
+        }
 
-    const cpuElement = document.getElementById('cpu-info')
-    cpuElement.textContent = data.cpus[0].model
-    cpuElement.title = data.cpus[0].model // Show full name on hover
+        const data = await res.json()
+
+        document.getElementById('username+hostname').textContent = data.userInfo.username + "@" + data.hostname
+        document.getElementById('os+arch').textContent = data.type + " " + "(" + data.arch + ")"
+        document.getElementById('kernel-version').textContent = data.release
+
+        const cpuElement = document.getElementById('cpu-info')
+        cpuElement.textContent = data.cpus[0].model
+        cpuElement.title = data.cpus[0].model // Show full name on hover
+    } catch (error) {
+        console.error('Error loading static stats:', error);
+    }
 }
 
 async function loadStats() {
-    const res = await fetch('/api/stats')
-    const data = await res.json()
+    try {
+        const serverId = getServerIdFromUrl();
+        const url = serverId ? `/api/stats?server_id=${serverId}` : '/api/stats';
+        const res = await fetch(url)
 
-    const uptime_hours = Math.floor(data.uptime / 3600)
-    const uptime_minutes = Math.floor((data.uptime % 3600) / 60)
-    const uptime_seconds = Math.floor(data.uptime % 60)
-    const formattedUptime = `${uptime_hours}h ${uptime_minutes}m ${uptime_seconds}s`
+        if (!res.ok) {
+            const error = await res.json();
+            if (error.hosted || error.requiresSelection) {
+                // Show waiting for agents message
+                await showWaitingForAgents();
+                return;
+            }
+            throw new Error(error.error || 'Failed to load stats');
+        }
 
-    const totalMemGB = (data.totalMem / 1024 / 1024 / 1024).toFixed(2)
-    const freeMemGB = (data.freeMem / 1024 / 1024 / 1024).toFixed(2)
-    const usedMemGB = (totalMemGB - freeMemGB).toFixed(2)
+        const data = await res.json()
 
-    document.getElementById('total-memory').textContent = totalMemGB + ' GB'
-    document.getElementById('used-memory').textContent = usedMemGB + ' GB'
-    document.getElementById('free-memory').textContent = freeMemGB + ' GB'
-    document.getElementById('uptime').textContent = formattedUptime
+        const uptime_hours = Math.floor(data.uptime / 3600)
+        const uptime_minutes = Math.floor((data.uptime % 3600) / 60)
+        const uptime_seconds = Math.floor(data.uptime % 60)
+        const formattedUptime = `${uptime_hours}h ${uptime_minutes}m ${uptime_seconds}s`
 
-    // Update load average
-    const cpuLoad = data.cpuLoad;
-    document.getElementById('load-1min').textContent = cpuLoad[0].toFixed(2)
-    document.getElementById('load-5min').textContent = cpuLoad[1].toFixed(2)
-    document.getElementById('load-15min').textContent = cpuLoad[2].toFixed(2)
+        const totalMemGB = (data.totalMem / 1024 / 1024 / 1024).toFixed(2)
+        const freeMemGB = (data.freeMem / 1024 / 1024 / 1024).toFixed(2)
+        const usedMemGB = (totalMemGB - freeMemGB).toFixed(2)
+
+        document.getElementById('total-memory').textContent = totalMemGB + ' GB'
+        document.getElementById('used-memory').textContent = usedMemGB + ' GB'
+        document.getElementById('free-memory').textContent = freeMemGB + ' GB'
+        document.getElementById('uptime').textContent = formattedUptime
+
+        // Update load average
+        const cpuLoad = data.cpuLoad;
+        document.getElementById('load-1min').textContent = cpuLoad[0].toFixed(2)
+        document.getElementById('load-5min').textContent = cpuLoad[1].toFixed(2)
+        document.getElementById('load-15min').textContent = cpuLoad[2].toFixed(2)
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+}
+
+// Flag to track if banner is already shown
+let bannerShown = false;
+// Store the promise to ensure only one execution
+let bannerPromise = null;
+
+// Show "waiting for agents" message when in hosted mode with no connected agents
+async function showWaitingForAgents() {
+    // If already shown, return immediately
+    if (bannerShown) {
+        return;
+    }
+
+    // If already processing, return the existing promise
+    if (bannerPromise) {
+        return bannerPromise;
+    }
+
+    // Check if banner already exists in DOM
+    const existingBanner = document.getElementById('waiting-banner');
+    if (existingBanner) {
+        bannerShown = true;
+        return;
+    }
+
+    // Create and store the promise
+    bannerPromise = (async () => {
+        const container = document.querySelector('.grid-stack');
+        if (!container) return;
+
+        // Stop all interval timers to prevent continuous calling
+        clearAllIntervals();
+        bannerShown = true;
+
+        try {
+            // Check how many servers are ONLINE (seen in last 2 minutes)
+            const response = await fetch('/api/servers');
+            const allServers = await response.json();
+
+            // Filter to only online servers (seen within last 2 minutes)
+            const now = new Date();
+            const onlineServers = allServers.filter(server => {
+                const lastSeen = new Date(server.lastSeen);
+                const diffMinutes = Math.floor((now - lastSeen) / 60000);
+                return diffMinutes < 2;
+            });
+
+            const banner = document.createElement('div');
+            banner.id = 'waiting-banner';
+
+            if (onlineServers.length === 0) {
+                // No agents online
+                banner.className = 'alert alert-warning text-center p-5 m-4';
+                banner.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block text-warning"></i>
+                    <h3>Waiting for Agent Connection</h3>
+                    <p class="mb-3">No monitoring agents are currently online.</p>
+                    <p class="text-muted">To monitor your machines, please run the agent script on each machine you want to monitor.</p>
+                    <p class="text-muted">The agent script is available in the repository. Check the README for setup instructions.</p>
+                    <div class="mt-4">
+                        <button class="btn btn-primary" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Agents are online but no server_id selected
+                banner.className = 'alert alert-info text-center p-5 m-4';
+                banner.innerHTML = `
+                    <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
+                    <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
+                    <p class="mb-3">Please select a machine to monitor from the Machines page.</p>
+                    <div class="mt-4">
+                        <a href="/machines" class="btn btn-primary">
+                            <i class="bi bi-list-ul me-2"></i>View Machines
+                        </a>
+                    </div>
+                `;
+            }
+
+            container.parentElement.insertBefore(banner, container);
+            container.style.display = 'none';
+        } catch (error) {
+            console.error('Error checking servers:', error);
+            // Fallback banner
+            const banner = document.createElement('div');
+            banner.id = 'waiting-banner';
+            banner.className = 'alert alert-warning text-center p-5 m-4';
+            banner.innerHTML = `
+                <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block"></i>
+                <h3>Loading...</h3>
+                <p class="mb-3">Checking for connected agents...</p>
+                <div class="mt-4">
+                    <button class="btn btn-primary" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                    </button>
+                </div>
+            `;
+            container.parentElement.insertBefore(banner, container);
+            container.style.display = 'none';
+        }
+    })();
+
+    return bannerPromise;
+}
+
+// Store interval IDs to clear them when needed
+const intervalIds = [];
+
+function clearAllIntervals() {
+    intervalIds.forEach(id => clearInterval(id));
+    intervalIds.length = 0; // Clear the array
 }
 
 // Store previous network stats for speed calculation
@@ -45,7 +198,9 @@ let previousCpuStats = null;
 
 async function loadCpuPerCore() {
     try {
-        const res = await fetch('/api/cpu-per-core');
+        const serverId = getServerIdFromUrl();
+        const url = serverId ? `/api/cpu-per-core?server_id=${serverId}` : '/api/cpu-per-core';
+        const res = await fetch(url);
         const currentStats = await res.json();
 
         if (previousCpuStats) {
@@ -219,7 +374,9 @@ function displayCpuBars(currentStats, previousStats) {
 
 async function loadNetworkStats() {
     try {
-        const res = await fetch('/api/network-stats');
+        const serverId = getServerIdFromUrl();
+        const url = serverId ? `/api/network-stats?server_id=${serverId}` : '/api/network-stats';
+        const res = await fetch(url);
         const currentStats = await res.json();
         const currentTime = Date.now();
 
@@ -324,7 +481,9 @@ async function getOsRelease() {
 }
 
 async function getDiskUsage() {
-    const res = await fetch('/api/disk-usage')
+    const serverId = getServerIdFromUrl();
+    const url = serverId ? `/api/disk-usage?server_id=${serverId}` : '/api/disk-usage';
+    const res = await fetch(url)
     const data = await res.text()
 
     // split on newlines, trim each line, remove empty lines
@@ -351,9 +510,10 @@ getDiskUsage()
 loadNetworkStats()
 loadCpuPerCore()
 
-setInterval(loadStats, 1000) // auto-refresh every 1 second
-setInterval(loadNetworkStats, 1000) // update network stats every 1 second
-setInterval(loadCpuPerCore, 1000) // update CPU per-core stats every 1 second
+// Start intervals - they will be cleared if banner needs to be shown
+intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second
+intervalIds.push(setInterval(loadNetworkStats, 1000)); // update network stats every 1 second
+intervalIds.push(setInterval(loadCpuPerCore, 1000)); // update CPU per-core stats every 1 second
 
 // Initialize Bootstrap tooltips
 document.addEventListener('DOMContentLoaded', function() {
