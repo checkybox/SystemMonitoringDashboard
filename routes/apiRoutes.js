@@ -1089,6 +1089,19 @@ router.delete('/servers/:id', requireAdmin, async (req, res) => {
     }
 });
 
+// POST /api/servers/:id/claim - DEPRECATED: Stub for backward compatibility with cached browser code
+// Dynamic ownership means claiming is no longer needed, but old cached scripts might call this
+router.post('/servers/:id/claim', requireAuth, async (req, res) => {
+    const { id } = req.params;
+
+    // Just return success - ownership is now dynamic
+    console.log(`⚠ Old claim endpoint called for ${id} - ignoring (dynamic ownership active)`);
+
+    res.status(200).json({
+        message: 'Ownership is now dynamic - no claiming needed',
+        success: true
+    });
+});
 
 // GET /api/servers/:id/metrics - Get metrics for a specific server (PROTECTED)
 router.get('/servers/:id/metrics', requireAuth, async (req, res) => {
