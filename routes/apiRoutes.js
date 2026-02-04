@@ -1089,59 +1089,6 @@ router.delete('/servers/:id', requireAdmin, async (req, res) => {
     }
 });
 
-// POST /api/servers/:id/claim - Regular users claim ownership of a server
-router.post('/servers/:id/claim', requireAuth, async (req, res) => {
-    const { id } = req.params;
-
-    try {
-        // Only regular users can claim servers
-        const isAdmin = req.session.user && req.session.user.role === 'admin';
-        if (isAdmin) {
-            return res.status(400).json({
-                error: 'Admins cannot claim servers',
-                message: 'Only regular users can claim server ownership'
-            });
-        }
-
-        const userId = req.session.userId;
-
-        // Find the server
-        let server;
-        if (mongoose.Types.ObjectId.isValid(id)) {
-            server = await Server.findById(id);
-        } else {
-            server = await Server.findOne({ identifier: id });
-        }
-
-        if (!server) {
-            return res.status(404).json({ error: 'Server not found' });
-        }
-
-        // Check if server is already claimed
-        if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
-            return res.status(403).json({
-                error: 'Server already claimed',
-                message: 'This server is already owned by another user'
-            });
-        }
-
-        // Claim the server
-        server.ownedBy = userId;
-        await server.save();
-
-        res.status(200).json({
-            message: 'Server claimed successfully',
-            server: {
-                _id: server._id,
-                identifier: server.identifier,
-                hostname: server.hostname
-            }
-        });
-    } catch (error) {
-        console.error('Error claiming server:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
 
 // GET /api/servers/:id/metrics - Get metrics for a specific server (PROTECTED)
 router.get('/servers/:id/metrics', requireAuth, async (req, res) => {

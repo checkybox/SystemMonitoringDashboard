@@ -12,8 +12,8 @@ async function checkAuth() {
 
 // Update navigation based on authentication status
 function updateNavigation(isAuthenticated, user) {
-    // Select the MAIN navigation navbar (with ms-auto class), not the machine selector
-    const navbarNav = document.querySelector('.navbar-nav.ms-auto') || document.querySelector('.navbar-nav');
+    // Select the navbar (now without ms-auto)
+    const navbarNav = document.querySelector('.navbar-nav');
 
     // Remove existing auth items
     const existingAuthItems = document.querySelectorAll('.auth-item');
