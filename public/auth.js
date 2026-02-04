@@ -61,14 +61,14 @@ function updateNavigation(isAuthenticated, user) {
                 <li><span class="dropdown-item-text text-muted small">${user.email}</span></li>
                 <li><span class="dropdown-item-text text-muted small">Role: ${user.role}</span></li>
                 <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/settings"><i class="bi bi-gear-fill me-2"></i>Settings</a></li>
                 <li><a class="dropdown-item" href="#" onclick="logout(event)"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
             </ul>
         `;
 
-        // Insert before theme toggle button
-        const themeToggle = navbarNav.querySelector('#theme-toggle');
-        if (themeToggle && themeToggle.parentElement) {
-            themeToggle.parentElement.parentElement.insertBefore(userItem, themeToggle.parentElement);
+        // Insert at the BEGINNING (left side) of the navbar
+        if (navbarNav.firstChild) {
+            navbarNav.insertBefore(userItem, navbarNav.firstChild);
         } else {
             navbarNav.appendChild(userItem);
         }
@@ -83,10 +83,9 @@ function updateNavigation(isAuthenticated, user) {
             </a>
         `;
 
-        // Insert before theme toggle button
-        const themeToggle = navbarNav.querySelector('#theme-toggle');
-        if (themeToggle && themeToggle.parentElement) {
-            themeToggle.parentElement.parentElement.insertBefore(loginItem, themeToggle.parentElement);
+        // Insert at the BEGINNING (left side) of the navbar
+        if (navbarNav.firstChild) {
+            navbarNav.insertBefore(loginItem, navbarNav.firstChild);
         } else {
             navbarNav.appendChild(loginItem);
         }
