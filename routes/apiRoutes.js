@@ -123,10 +123,26 @@ router.post('/agent-metrics', async (req, res) => {
 
         const identifier = `${username}@${hostname}`;
 
-        // Find or create server entry
+        // Initialize global runtime storage for registration codes
+        if (!global.serverRegistrationCodes) {
+            global.serverRegistrationCodes = new Map();
+        }
+
+        // Store registration code in runtime memory (dynamic ownership)
+        if (registrationCode) {
+            global.serverRegistrationCodes.set(identifier, registrationCode.toUpperCase());
+            console.log(`✓ Server ${identifier} using registration code ${registrationCode}`);
+        } else {
+            global.serverRegistrationCodes.delete(identifier);
+            console.log(`⚠ Server ${identifier} has no registration code (unclaimed)`);
+        }
+
+        // Find or create server entry (NO ownedBy field stored in DB)
         let server = await Server.findOne({ identifier });
+        let isNewServer = false;
 
         if (!server) {
+            isNewServer = true;
             server = new Server({
                 hostname,
                 username,
@@ -141,25 +157,12 @@ router.post('/agent-metrics', async (req, res) => {
             });
         }
 
-        // Link server to user via registration code (only if not already owned)
-        if (registrationCode && !server.ownedBy) {
-            const User = mongoose.model('User');
-            const user = await User.findOne({
-                registrationCode: registrationCode.toUpperCase()
-            });
-
-            if (user) {
-                server.ownedBy = user._id;
-                console.log(`Server ${identifier} auto-linked to user ${user.username} via registration code ${registrationCode}`);
-            } else {
-                console.warn(`Invalid registration code provided: ${registrationCode}`);
-            }
-        }
-
         await server.save();
 
-        if (!server.isNew) {
-            // Update server information
+        if (isNewServer) {
+            console.log(`New agent registered: ${identifier}`);
+        } else {
+            // Update server information for existing servers
             const currentRelease = release || server.release;
             const currentCpuModel = cpuModel || server.cpuModel;
             const currentTotalMemory = totalMem || server.totalMemory;
@@ -182,10 +185,13 @@ router.post('/agent-metrics', async (req, res) => {
             }
 
             server.lastSeen = new Date();
-            await server.save();
 
             if (updated) {
+                await server.save();
                 console.log(`Agent ${identifier}: Information updated`);
+            } else {
+                server.lastSeen = new Date();
+                await server.save();
             }
         }
 
@@ -242,13 +248,40 @@ router.get('/static-stats', requireAuth, async (req, res) => {
             const isAdmin = req.session.user && req.session.user.role === 'admin';
             const userId = req.session.userId;
 
+            // Initialize runtime storage if not exists
+            if (!global.serverRegistrationCodes) {
+                global.serverRegistrationCodes = new Map();
+            }
+
             if (!isAdmin) {
-                // Allow access if server is unclaimed OR owned by this user
-                if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
-                    return res.status(403).json({
-                        error: 'Access denied',
-                        message: 'You can only access your own servers'
-                    });
+                const currentUser = await mongoose.model('User').findById(userId);
+                const serverRegCode = global.serverRegistrationCodes.get(server.identifier);
+
+                if (hosted) {
+                    // Hosted: strict - must match user's registration code
+                    if (!currentUser || !currentUser.registrationCode) {
+                        return res.status(403).json({
+                            error: 'Access denied',
+                            message: 'You need a registration code to access servers'
+                        });
+                    }
+
+                    if (serverRegCode !== currentUser.registrationCode.toUpperCase()) {
+                        return res.status(403).json({
+                            error: 'Access denied',
+                            message: 'You can only access your own servers'
+                        });
+                    }
+                } else {
+                    // Localhost: allow if unclaimed OR matches user's code
+                    if (serverRegCode && currentUser && currentUser.registrationCode) {
+                        if (serverRegCode !== currentUser.registrationCode.toUpperCase()) {
+                            return res.status(403).json({
+                                error: 'Access denied',
+                                message: 'You can only access your own servers'
+                            });
+                        }
+                    }
                 }
             }
 
@@ -321,14 +354,41 @@ router.get('/stats', requireAuth, async (req, res) => {
             const isAdmin = req.session.user && req.session.user.role === 'admin';
             const userId = req.session.userId;
 
+            // Initialize runtime storage if not exists
+            if (!global.serverRegistrationCodes) {
+                global.serverRegistrationCodes = new Map();
+            }
+
             if (!isAdmin && latestMetrics.server_id) {
                 const server = latestMetrics.server_id;
-                // Allow access if server is unclaimed OR owned by this user
-                if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
-                    return res.status(403).json({
-                        error: 'Access denied',
-                        message: 'You can only access your own servers'
-                    });
+                const currentUser = await mongoose.model('User').findById(userId);
+                const serverRegCode = global.serverRegistrationCodes.get(server.identifier);
+
+                if (hosted) {
+                    // Hosted: strict - must match user's registration code
+                    if (!currentUser || !currentUser.registrationCode) {
+                        return res.status(403).json({
+                            error: 'Access denied',
+                            message: 'You need a registration code to access servers'
+                        });
+                    }
+
+                    if (serverRegCode !== currentUser.registrationCode.toUpperCase()) {
+                        return res.status(403).json({
+                            error: 'Access denied',
+                            message: 'You can only access your own servers'
+                        });
+                    }
+                } else {
+                    // Localhost: allow if unclaimed OR matches user's code
+                    if (serverRegCode && currentUser && currentUser.registrationCode) {
+                        if (serverRegCode !== currentUser.registrationCode.toUpperCase()) {
+                            return res.status(403).json({
+                                error: 'Access denied',
+                                message: 'You can only access your own servers'
+                            });
+                        }
+                    }
                 }
             }
 
@@ -717,14 +777,14 @@ router.get('/servers', requireAuth, async (req, res) => {
         // Check user role
         const isAdmin = req.session.user && req.session.user.role === 'admin';
         const userId = req.session.userId;
+        const hosted = isHostedEnvironment();
+
+        // Initialize runtime storage if not exists
+        if (!global.serverRegistrationCodes) {
+            global.serverRegistrationCodes = new Map();
+        }
 
         let query = Server.find();
-
-        // Regular users: only see servers they own OR unclaimed servers (ownedBy = null)
-        // Admins: see all servers
-        if (!isAdmin) {
-            query = query.where('ownedBy').in([userId, null]);
-        }
 
         // Apply sorting (e.g., ?sort=lastSeen or ?sort=-createdAt)
         if (sort) {
@@ -745,13 +805,57 @@ router.get('/servers', requireAuth, async (req, res) => {
 
         const servers = await query;
 
+        // Calculate ownership dynamically from runtime registration codes
+        let filteredServers = servers;
+
+        if (!isAdmin && hosted) {
+            // For regular users on hosted: filter by dynamic ownership
+            const currentUser = await mongoose.model('User').findById(userId);
+            if (currentUser && currentUser.registrationCode) {
+                filteredServers = servers.filter(server => {
+                    const serverRegCode = global.serverRegistrationCodes.get(server.identifier);
+                    return serverRegCode === currentUser.registrationCode.toUpperCase();
+                });
+            } else {
+                filteredServers = []; // No code = no servers
+            }
+        } else if (!isAdmin && !hosted) {
+            // For regular users on localhost: show owned + unclaimed
+            const currentUser = await mongoose.model('User').findById(userId);
+            const userRegCode = currentUser ? currentUser.registrationCode?.toUpperCase() : null;
+
+            filteredServers = servers.filter(server => {
+                const serverRegCode = global.serverRegistrationCodes.get(server.identifier);
+                // Show if: no code (unclaimed) OR matches user's code
+                return !serverRegCode || serverRegCode === userRegCode;
+            });
+        }
+
         // Add metrics count for each server
         const serversWithCounts = await Promise.all(
-            servers.map(async (server) => {
+            filteredServers.map(async (server) => {
                 const metricsCount = await Metrics.countDocuments({ server_id: server._id });
+
+                // Add dynamic ownership info (for display purposes)
+                const serverRegCode = global.serverRegistrationCodes.get(server.identifier);
+                let ownerInfo = null;
+
+                if (serverRegCode) {
+                    const owner = await mongoose.model('User').findOne({
+                        registrationCode: serverRegCode
+                    });
+                    if (owner) {
+                        ownerInfo = {
+                            username: owner.username,
+                            fullName: owner.fullName
+                        };
+                    }
+                }
+
                 return {
                     ...server.toObject(),
-                    metricsCount
+                    metricsCount,
+                    dynamicOwner: ownerInfo // Dynamic ownership info
                 };
             })
         );
@@ -788,14 +892,42 @@ router.get('/servers/:id', requireAuth, async (req, res) => {
             return res.status(404).json({ error: 'Server not found' });
         }
 
-        // Regular users: check ownership (allow if unclaimed OR owned by them)
+        // Initialize runtime storage if not exists
+        if (!global.serverRegistrationCodes) {
+            global.serverRegistrationCodes = new Map();
+        }
+
+        // Regular users: check dynamic ownership
         if (!isAdmin) {
-            // Allow access if server is unclaimed (ownedBy = null) OR owned by this user
-            if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
-                return res.status(403).json({
-                    error: 'Access denied',
-                    message: 'You can only access your own servers'
-                });
+            const hosted = isHostedEnvironment();
+            const currentUser = await mongoose.model('User').findById(userId);
+            const serverRegCode = global.serverRegistrationCodes.get(server.identifier);
+
+            if (hosted) {
+                // Hosted: strict - must match user's registration code
+                if (!currentUser || !currentUser.registrationCode) {
+                    return res.status(403).json({
+                        error: 'Access denied',
+                        message: 'You need a registration code to access servers'
+                    });
+                }
+
+                if (serverRegCode !== currentUser.registrationCode.toUpperCase()) {
+                    return res.status(403).json({
+                        error: 'Access denied',
+                        message: 'You can only access your own servers'
+                    });
+                }
+            } else {
+                // Localhost: allow if unclaimed OR matches user's code
+                if (serverRegCode && currentUser && currentUser.registrationCode) {
+                    if (serverRegCode !== currentUser.registrationCode.toUpperCase()) {
+                        return res.status(403).json({
+                            error: 'Access denied',
+                            message: 'You can only access your own servers'
+                        });
+                    }
+                }
             }
         }
 

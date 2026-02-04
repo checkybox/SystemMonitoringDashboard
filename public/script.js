@@ -14,31 +14,8 @@ async function selectServer() {
         return;
     }
 
-    try {
-        // Try to claim the server first (will fail if already claimed by someone else)
-        const claimResponse = await fetch(`/api/servers/${serverId}/claim`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (claimResponse.status === 403) {
-            // Server already claimed by another user
-            const error = await claimResponse.json();
-            alert(error.message || 'This machine is already claimed by another user');
-            return;
-        }
-
-        // If claim succeeded or already owned by this user, reload with server_id
-        if (claimResponse.ok || claimResponse.status === 403) {
-            window.location.href = `/?server_id=${serverId}`;
-        }
-    } catch (error) {
-        console.error('Error claiming server:', error);
-        // If claim fails, still try to load (maybe already owned)
-        window.location.href = `/?server_id=${serverId}`;
-    }
+    // Direct reload with server_id (ownership is dynamic, no claiming needed)
+    window.location.href = `/?server_id=${serverId}`;
 }
 
 async function loadStaticStats() {
