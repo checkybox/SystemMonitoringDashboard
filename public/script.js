@@ -5,7 +5,7 @@ function getServerIdFromUrl() {
 }
 
 // Function for regular users to select a server from dropdown
-function selectServer() {
+async function selectServer() {
     const select = document.getElementById('server-select');
     const serverId = select.value;
 
@@ -14,8 +14,31 @@ function selectServer() {
         return;
     }
 
-    // Reload page with server_id parameter
-    window.location.href = `/?server_id=${serverId}`;
+    try {
+        // Try to claim the server first (will fail if already claimed by someone else)
+        const claimResponse = await fetch(`/api/servers/${serverId}/claim`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (claimResponse.status === 403) {
+            // Server already claimed by another user
+            const error = await claimResponse.json();
+            alert(error.message || 'This machine is already claimed by another user');
+            return;
+        }
+
+        // If claim succeeded or already owned by this user, reload with server_id
+        if (claimResponse.ok || claimResponse.status === 403) {
+            window.location.href = `/?server_id=${serverId}`;
+        }
+    } catch (error) {
+        console.error('Error claiming server:', error);
+        // If claim fails, still try to load (maybe already owned)
+        window.location.href = `/?server_id=${serverId}`;
+    }
 }
 
 async function loadStaticStats() {
@@ -550,13 +573,28 @@ async function getDiskUsage() {
 // Machine switcher functions
 async function initMachineSwitcher() {
     const serverId = getServerIdFromUrl();
-    if (!serverId) {
-        // No server selected, hide switcher
-        document.getElementById('machine-selector-bar').style.display = 'none';
-        return;
-    }
 
     try {
+        // Check user role first
+        const authResponse = await fetch('/auth/check');
+        const authData = await authResponse.json();
+        const isAdmin = authData.isAuthenticated && authData.user?.role === 'admin';
+
+        // Only show switcher for regular users
+        if (isAdmin) {
+            // Hide switcher for admins
+            document.getElementById('machine-selector-nav').style.display = 'none';
+            document.getElementById('clear-selection-nav').style.display = 'none';
+            return;
+        }
+
+        if (!serverId) {
+            // No server selected, hide switcher
+            document.getElementById('machine-selector-nav').style.display = 'none';
+            document.getElementById('clear-selection-nav').style.display = 'none';
+            return;
+        }
+
         // Fetch all servers
         const response = await fetch('/api/servers');
         const servers = await response.json();
@@ -570,8 +608,9 @@ async function initMachineSwitcher() {
         });
 
         if (onlineServers.length > 0) {
-            // Show machine selector
-            document.getElementById('machine-selector-bar').style.display = 'block';
+            // Show machine selector in navbar (regular users only)
+            document.getElementById('machine-selector-nav').style.display = 'block';
+            document.getElementById('clear-selection-nav').style.display = 'block';
 
             // Populate dropdown
             const select = document.getElementById('machine-switcher');

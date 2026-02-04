@@ -27,6 +27,7 @@ const serverSchema = new mongoose.Schema({
     release: { type: String, required: true },
     cpuModel: { type: String },
     totalMemory: { type: Number },
+    ownedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // Which user owns this machine
     lastSeen: { type: Date, default: Date.now },
     createdAt: { type: Date, default: Date.now }
 });
@@ -202,21 +203,10 @@ router.post('/agent-metrics', async (req, res) => {
 router.get('/static-stats', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
+        const { server_id } = req.query;
 
-        if (hosted) {
-            // In hosted mode, REQUIRE server_id parameter
-            const { server_id } = req.query;
-
-            if (!server_id) {
-                // No server_id provided - return error to trigger agent selection
-                return res.status(404).json({
-                    error: 'No server selected',
-                    message: 'Please select a server to monitor.',
-                    hosted: true,
-                    requiresSelection: true
-                });
-            }
-
+        // If server_id is provided (even on localhost), fetch from database
+        if (server_id) {
             if (!mongoose.Types.ObjectId.isValid(server_id)) {
                 return res.status(400).json({ error: 'Invalid server_id' });
             }
@@ -227,8 +217,22 @@ router.get('/static-stats', requireAuth, async (req, res) => {
                 return res.status(404).json({
                     error: 'Server not found',
                     message: 'The selected server does not exist.',
-                    hosted: true
+                    hosted: hosted
                 });
+            }
+
+            // Check ownership for regular users
+            const isAdmin = req.session.user && req.session.user.role === 'admin';
+            const userId = req.session.userId;
+
+            if (!isAdmin) {
+                // Allow access if server is unclaimed OR owned by this user
+                if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
+                    return res.status(403).json({
+                        error: 'Access denied',
+                        message: 'You can only access your own servers'
+                    });
+                }
             }
 
             // Return static info in expected format
@@ -239,11 +243,21 @@ router.get('/static-stats', requireAuth, async (req, res) => {
                 hostname: server.hostname,
                 userInfo: { username: server.username },
                 cpus: [{ model: server.cpuModel }],
-                hosted: true
+                hosted: hosted
             });
         }
 
-        // Local mode - return current machine info
+        // Hosted mode without server_id - require selection
+        if (hosted) {
+            return res.status(404).json({
+                error: 'No server selected',
+                message: 'Please select a server to monitor.',
+                hosted: true,
+                requiresSelection: true
+            });
+        }
+
+        // Local mode without server_id - return current machine info
         const data = {
             arch: os.arch(),
             release: os.release(),
@@ -265,21 +279,10 @@ router.get('/static-stats', requireAuth, async (req, res) => {
 router.get('/stats', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
+        const { server_id } = req.query;
 
-        if (hosted) {
-            // In hosted mode, REQUIRE server_id parameter
-            const { server_id } = req.query;
-
-            if (!server_id) {
-                // No server_id provided - return error to trigger agent selection
-                return res.status(404).json({
-                    error: 'No server selected',
-                    message: 'Please select a server to monitor.',
-                    hosted: true,
-                    requiresSelection: true
-                });
-            }
-
+        // If server_id is provided (even on localhost), fetch from database
+        if (server_id) {
             if (!mongoose.Types.ObjectId.isValid(server_id)) {
                 return res.status(400).json({ error: 'Invalid server_id' });
             }
@@ -293,8 +296,23 @@ router.get('/stats', requireAuth, async (req, res) => {
                 return res.status(404).json({
                     error: 'No metrics available for this server',
                     message: 'The agent may not be sending data.',
-                    hosted: true
+                    hosted: hosted
                 });
+            }
+
+            // Check ownership for regular users
+            const isAdmin = req.session.user && req.session.user.role === 'admin';
+            const userId = req.session.userId;
+
+            if (!isAdmin && latestMetrics.server_id) {
+                const server = latestMetrics.server_id;
+                // Allow access if server is unclaimed OR owned by this user
+                if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
+                    return res.status(403).json({
+                        error: 'Access denied',
+                        message: 'You can only access your own servers'
+                    });
+                }
             }
 
             // Return metrics in expected format
@@ -312,11 +330,21 @@ router.get('/stats', requireAuth, async (req, res) => {
                     hostname: latestMetrics.server_id.hostname,
                     username: latestMetrics.server_id.username
                 } : null,
-                hosted: true
+                hosted: hosted
             });
         }
 
-        // Local mode - collect metrics from current machine
+        // Hosted mode without server_id - require selection
+        if (hosted) {
+            return res.status(404).json({
+                error: 'No server selected',
+                message: 'Please select a server to monitor.',
+                hosted: true,
+                requiresSelection: true
+            });
+        }
+
+        // Local mode without server_id - collect metrics from current machine
         const allInterfaces = os.networkInterfaces();
 
         // Filter interfaces by name (enp8s, tailscale, wlan)
@@ -669,7 +697,17 @@ router.get('/servers', requireAuth, async (req, res) => {
     try {
         const { sort, limit, fields } = req.query;
 
+        // Check user role
+        const isAdmin = req.session.user && req.session.user.role === 'admin';
+        const userId = req.session.userId;
+
         let query = Server.find();
+
+        // Regular users: only see servers they own OR unclaimed servers (ownedBy = null)
+        // Admins: see all servers
+        if (!isAdmin) {
+            query = query.where('ownedBy').in([userId, null]);
+        }
 
         // Apply sorting (e.g., ?sort=lastSeen or ?sort=-createdAt)
         if (sort) {
@@ -713,6 +751,10 @@ router.get('/servers/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
+        // Check user role
+        const isAdmin = req.session.user && req.session.user.role === 'admin';
+        const userId = req.session.userId;
+
         let server;
 
         // Try to find by MongoDB _id first
@@ -727,6 +769,17 @@ router.get('/servers/:id', requireAuth, async (req, res) => {
 
         if (!server) {
             return res.status(404).json({ error: 'Server not found' });
+        }
+
+        // Regular users: check ownership (allow if unclaimed OR owned by them)
+        if (!isAdmin) {
+            // Allow access if server is unclaimed (ownedBy = null) OR owned by this user
+            if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
+                return res.status(403).json({
+                    error: 'Access denied',
+                    message: 'You can only access your own servers'
+                });
+            }
         }
 
         // Get metrics count for this server
@@ -883,6 +936,60 @@ router.delete('/servers/:id', requireAdmin, async (req, res) => {
         });
     } catch (error) {
         console.error('Error deleting server:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// POST /api/servers/:id/claim - Regular users claim ownership of a server
+router.post('/servers/:id/claim', requireAuth, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Only regular users can claim servers
+        const isAdmin = req.session.user && req.session.user.role === 'admin';
+        if (isAdmin) {
+            return res.status(400).json({
+                error: 'Admins cannot claim servers',
+                message: 'Only regular users can claim server ownership'
+            });
+        }
+
+        const userId = req.session.userId;
+
+        // Find the server
+        let server;
+        if (mongoose.Types.ObjectId.isValid(id)) {
+            server = await Server.findById(id);
+        } else {
+            server = await Server.findOne({ identifier: id });
+        }
+
+        if (!server) {
+            return res.status(404).json({ error: 'Server not found' });
+        }
+
+        // Check if server is already claimed
+        if (server.ownedBy && server.ownedBy.toString() !== userId.toString()) {
+            return res.status(403).json({
+                error: 'Server already claimed',
+                message: 'This server is already owned by another user'
+            });
+        }
+
+        // Claim the server
+        server.ownedBy = userId;
+        await server.save();
+
+        res.status(200).json({
+            message: 'Server claimed successfully',
+            server: {
+                _id: server._id,
+                identifier: server.identifier,
+                hostname: server.hostname
+            }
+        });
+    } catch (error) {
+        console.error('Error claiming server:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });

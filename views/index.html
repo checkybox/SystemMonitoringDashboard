@@ -30,6 +30,18 @@
                     <li class="nav-item"><a class="nav-link fw-light" href="/settings">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
+                    <!-- Machine Selector (Regular users only, shown when monitoring) -->
+                    <li class="nav-item" id="machine-selector-nav" style="display: none;">
+                        <select id="machine-switcher" class="form-select form-select-sm mt-2" onchange="switchMachine()" style="min-width: 200px;">
+                            <option value="">Select machine...</option>
+                        </select>
+                    </li>
+                    <li class="nav-item" id="clear-selection-nav" style="display: none;">
+                        <button class="btn btn-sm btn-outline-secondary mt-2 ms-2" onclick="clearMachineSelection()">
+                            <i class="bi bi-x-circle me-1"></i>
+                            View All
+                        </button>
+                    </li>
                     <li class="nav-item">
                         <button id="theme-toggle" class="btn btn-link nav-link" onclick="toggleTheme()" aria-label="Toggle theme">
                             <i class="bi bi-moon-fill"></i>
@@ -38,30 +50,11 @@
                 </ul>
             </div>
         </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </nav>
-</div>
-
-<!-- Machine Selector Bar (shown when server_id is in URL) -->
-<div id="machine-selector-bar" class="container-fluid px-4 py-2 bg-light border-bottom" style="display: none;">
-    <div class="row align-items-center">
-        <div class="col-auto">
-            <span class="text-muted">
-                <i class="bi bi-server me-2"></i>
-                Monitoring:
-            </span>
-        </div>
-        <div class="col-auto">
-            <select id="machine-switcher" class="form-select form-select-sm" onchange="switchMachine()">
-                <option value="">Loading machines...</option>
-            </select>
-        </div>
-        <div class="col-auto">
-            <button class="btn btn-sm btn-outline-secondary" onclick="clearMachineSelection()">
-                <i class="bi bi-x-circle me-1"></i>
-                View All
-            </button>
-        </div>
-    </div>
 </div>
 
 <!-- Main container -->
