@@ -21,6 +21,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 dotenv.config();
 
+// Trust proxy - CRITICAL for Render (behind reverse proxy)
+app.set('trust proxy', 1);
+
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
