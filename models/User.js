@@ -32,8 +32,8 @@ const userSchema = new mongoose.Schema({
     },
     registrationCode: {
         type: String,
-        required: true,
         unique: true,
+        sparse: true, // Allows null, unique only when present
         uppercase: true,
         minlength: 8,
         maxlength: 8

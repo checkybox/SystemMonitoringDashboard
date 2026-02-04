@@ -109,7 +109,8 @@ router.post('/register', async (req, res) => {
                     username: newUser.username,
                     email: newUser.email,
                     fullName: newUser.fullName,
-                    role: newUser.role
+                    role: newUser.role,
+                    registrationCode: newUser.registrationCode
                 }
             });
         });

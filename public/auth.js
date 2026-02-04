@@ -28,8 +28,9 @@ function updateNavigation(isAuthenticated, user) {
             if (machinesLink && machinesLink.parentElement) {
                 machinesLink.parentElement.style.display = 'none';
             }
+            // SHOW Settings for regular users
             if (settingsLink && settingsLink.parentElement) {
-                settingsLink.parentElement.style.display = 'none';
+                settingsLink.parentElement.style.display = 'block';
             }
         } else {
             // Show all links for admins
