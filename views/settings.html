@@ -21,8 +21,12 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div id="Navbar" class="navbar-collapse collapse">
+                <!-- Empty ul for consistent structure with index.html -->
                 <ul class="navbar-nav fs-4">
-                    <li class="nav-item ms-auto"><a class="nav-link fw-light" href="/">Home</a></li>
+                </ul>
+                <!-- Main navigation on RIGHT -->
+                <ul class="navbar-nav ms-auto fs-4">
+                    <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/machines">Machines</a></li>
                     <li class="nav-item"><a class="nav-link fw-light active" href="/settings">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
@@ -122,19 +126,28 @@
     // Load user settings and display registration code
     async function loadUserSettings() {
         try {
+            console.log('Fetching user settings...');
             const response = await fetch('/auth/api/user/me');
+            console.log('Response status:', response.status);
+
             if (!response.ok) {
-                console.error('Failed to fetch user info');
+                console.error('Failed to fetch user info, status:', response.status);
                 return;
             }
 
             const user = await response.json();
+            console.log('User data:', user);
+            console.log('User role:', user.role);
+            console.log('Registration code:', user.registrationCode);
 
             // Show registration code section for regular users only
             if (user.role !== 'admin' && user.registrationCode) {
+                console.log('Showing registration code section');
                 document.getElementById('registrationCodeSection').style.display = 'block';
                 document.getElementById('regCodeDisplay').value = user.registrationCode;
                 document.getElementById('regCodeInline').textContent = user.registrationCode;
+            } else {
+                console.log('Not showing registration code. Role:', user.role, 'Code:', user.registrationCode);
             }
         } catch (error) {
             console.error('Error loading user settings:', error);
