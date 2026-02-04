@@ -73,14 +73,24 @@ router.post('/register', async (req, res) => {
             role: newUser.role
         };
 
-        res.status(201).json({
-            message: 'Registration successful',
-            user: {
-                username: newUser.username,
-                email: newUser.email,
-                fullName: newUser.fullName,
-                role: newUser.role
+        // IMPORTANT: Save session before responding (critical for hosted environments)
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).json({
+                    error: 'Registration successful but session creation failed. Please login manually.'
+                });
             }
+
+            res.status(201).json({
+                message: 'Registration successful',
+                user: {
+                    username: newUser.username,
+                    email: newUser.email,
+                    fullName: newUser.fullName,
+                    role: newUser.role
+                }
+            });
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -131,14 +141,24 @@ router.post('/login', async (req, res) => {
             role: user.role
         };
 
-        res.status(200).json({
-            message: 'Login successful',
-            user: {
-                username: user.username,
-                email: user.email,
-                fullName: user.fullName,
-                role: user.role
+        // IMPORTANT: Save session before responding (critical for hosted environments)
+        req.session.save((err) => {
+            if (err) {
+                console.error('Session save error:', err);
+                return res.status(500).json({
+                    error: 'Login successful but session creation failed. Please try again.'
+                });
             }
+
+            res.status(200).json({
+                message: 'Login successful',
+                user: {
+                    username: user.username,
+                    email: user.email,
+                    fullName: user.fullName,
+                    role: user.role
+                }
+            });
         });
     } catch (error) {
         console.error('Login error:', error);
