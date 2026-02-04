@@ -22,12 +22,12 @@
             </button>
             <div id="Navbar" class="navbar-collapse collapse">
                 <ul class="navbar-nav fs-4">
-                    <li class="nav-item"><a class="nav-link fw-light" href="/">Home</a></li>
+                    <li class="nav-item ms-auto"><a class="nav-link fw-light" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/machines">Machines</a></li>
                     <li class="nav-item"><a class="nav-link fw-light active" href="/settings">Settings</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/contact">Contact</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/about">About</a></li>
-                    <li class="nav-item ms-auto">
+                    <li class="nav-item">
                         <button id="theme-toggle" class="btn btn-link nav-link fw-light" onclick="toggleTheme()" aria-label="Toggle theme">
                             <i class="bi bi-moon-fill"></i>
                         </button>
@@ -122,7 +122,7 @@
     // Load user settings and display registration code
     async function loadUserSettings() {
         try {
-            const response = await fetch('/api/user/me');
+            const response = await fetch('/auth/api/user/me');
             if (!response.ok) {
                 console.error('Failed to fetch user info');
                 return;
