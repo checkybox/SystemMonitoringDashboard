@@ -225,6 +225,7 @@ async function main() {
     console.log(`Dashboard URL: ${DASHBOARD_URL}`);
     console.log(`Push Interval: ${PUSH_INTERVAL / 1000} seconds`);
     console.log(`Machine: ${os.userInfo().username}@${os.hostname()}`);
+    console.log(`Registration Code: ${REGISTRATION_CODE ? REGISTRATION_CODE : 'Not provided (agent will be unlinked)'}`);
     console.log('='.repeat(60));
     console.log('');
 

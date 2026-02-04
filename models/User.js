@@ -30,6 +30,14 @@ const userSchema = new mongoose.Schema({
         enum: ['admin', 'user'],
         default: 'user'
     },
+    registrationCode: {
+        type: String,
+        required: true,
+        unique: true,
+        uppercase: true,
+        minlength: 8,
+        maxlength: 8
+    },
     createdAt: {
         type: Date,
         default: Date.now

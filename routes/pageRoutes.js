@@ -23,8 +23,8 @@ router.get('/machines', requireAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/machines.html'));
 });
 
-// Settings page - ADMIN ONLY
-router.get('/settings', requireAdmin, (req, res) => {
+// Settings page - PROTECTED (all users)
+router.get('/settings', requireAuth, (req, res) => {
     res.sendFile(path.join(__dirname, '../views/settings.html'));
 });
 

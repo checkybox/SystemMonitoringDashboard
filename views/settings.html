@@ -48,6 +48,37 @@
                 Settings
             </h1>
 
+            <!-- Registration Code Section (Regular users only) -->
+            <div class="card-floating mb-4" id="registrationCodeSection" style="display: none;">
+                <h3 class="card-header-custom">
+                    <i class="bi bi-key-fill me-2"></i>
+                    Agent Registration Code
+                </h3>
+                <div class="py-3">
+                    <p class="text-muted small mb-3">
+                        Use this unique code to register your monitoring agents. This code is permanent and cannot be changed.
+                    </p>
+                    <div class="input-group mb-3">
+                        <input type="text"
+                               class="form-control form-control-lg text-center fw-bold fs-4 font-monospace"
+                               id="regCodeDisplay"
+                               readonly
+                               style="letter-spacing: 0.3em; background-color: var(--bs-secondary-bg);">
+                        <button class="btn btn-outline-primary" type="button" onclick="copyRegistrationCode()">
+                            <i class="bi bi-clipboard me-1"></i> Copy
+                        </button>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong><i class="bi bi-info-circle me-2"></i>Agent Setup:</strong>
+                        <p class="mb-1">Set this environment variable when running your agent:</p>
+                        <code class="d-block p-2 bg-dark text-light rounded">REGISTRATION_CODE="<span id="regCodeInline"></span>"</code>
+                        <p class="mt-2 mb-0 small">
+                            Example: <code>REGISTRATION_CODE="A7K4M2P9" node agent.js</code>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Appearance Settings Section -->
             <div class="card-floating mb-4">
                 <h3 class="card-header-custom">
@@ -88,6 +119,52 @@
 <script>
     // Trigger animation
     document.querySelector('.page-animated').classList.add('animate-in');
+
+    // Load user settings and display registration code
+    async function loadUserSettings() {
+        try {
+            const response = await fetch('/api/user/me');
+            if (!response.ok) {
+                console.error('Failed to fetch user info');
+                return;
+            }
+
+            const user = await response.json();
+
+            // Show registration code section for regular users only
+            if (user.role !== 'admin' && user.registrationCode) {
+                document.getElementById('registrationCodeSection').style.display = 'block';
+                document.getElementById('regCodeDisplay').value = user.registrationCode;
+                document.getElementById('regCodeInline').textContent = user.registrationCode;
+            }
+        } catch (error) {
+            console.error('Error loading user settings:', error);
+        }
+    }
+
+    // Copy registration code to clipboard
+    function copyRegistrationCode() {
+        const codeInput = document.getElementById('regCodeDisplay');
+        codeInput.select();
+        codeInput.setSelectionRange(0, 99999); // For mobile
+
+        navigator.clipboard.writeText(codeInput.value).then(() => {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i> Copied!';
+            btn.classList.remove('btn-outline-primary');
+            btn.classList.add('btn-success');
+
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-primary');
+            }, 2000);
+        });
+    }
+
+    // Load settings when page loads
+    document.addEventListener('DOMContentLoaded', loadUserSettings);
 </script>
 <script src="/auth.js"></script>
 <script src="/theme.js"></script>

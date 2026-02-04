@@ -3,6 +3,16 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
+// Helper function to generate unique 8-character registration code (uppercase letters and digits)
+function generateRegistrationCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 // POST /auth/register - Register a new user (PUBLIC - anyone can register)
 router.post('/register', async (req, res) => {
     const { username, email, password, fullName } = req.body;
@@ -53,13 +63,24 @@ router.post('/register', async (req, res) => {
         // Admin role must be set manually via MongoDB Compass
         const userRole = 'user';
 
+        // Generate unique registration code (8 characters, uppercase)
+        let registrationCode;
+        let isUnique = false;
+
+        while (!isUnique) {
+            registrationCode = generateRegistrationCode();
+            const existing = await User.findOne({ registrationCode });
+            if (!existing) isUnique = true;
+        }
+
         // Create new user (password will be hashed automatically by pre-save hook)
         const newUser = new User({
             username,
             email,
             password,
             fullName,
-            role: userRole
+            role: userRole,
+            registrationCode
         });
 
         await newUser.save();
@@ -202,6 +223,24 @@ router.get('/check', (req, res) => {
             isAuthenticated: false,
             user: null
         });
+    }
+});
+
+// GET /api/user/me - Get current user's full information (PROTECTED)
+router.get('/api/user/me', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    try {
+        const user = await User.findById(req.session.userId).select('-password');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

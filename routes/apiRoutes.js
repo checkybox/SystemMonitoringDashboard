@@ -110,7 +110,7 @@ router.post('/agent-metrics', async (req, res) => {
     try {
         const {
             cpuLoad, cpus, freeMem, totalMem, uptime, networkInterfaces, networkStats, diskUsage,
-            hostname, username, arch, os_type, release, cpuModel
+            hostname, username, arch, os_type, release, cpuModel, registrationCode
         } = req.body;
 
         // Validate required fields
@@ -139,9 +139,26 @@ router.post('/agent-metrics', async (req, res) => {
                 lastSeen: new Date(),
                 createdAt: new Date()
             });
-            await server.save();
-            console.log(`New agent registered: ${identifier}`);
-        } else {
+        }
+
+        // Link server to user via registration code (only if not already owned)
+        if (registrationCode && !server.ownedBy) {
+            const User = mongoose.model('User');
+            const user = await User.findOne({
+                registrationCode: registrationCode.toUpperCase()
+            });
+
+            if (user) {
+                server.ownedBy = user._id;
+                console.log(`Server ${identifier} auto-linked to user ${user.username} via registration code ${registrationCode}`);
+            } else {
+                console.warn(`Invalid registration code provided: ${registrationCode}`);
+            }
+        }
+
+        await server.save();
+
+        if (!server.isNew) {
             // Update server information
             const currentRelease = release || server.release;
             const currentCpuModel = cpuModel || server.cpuModel;
