@@ -4,6 +4,20 @@ function getServerIdFromUrl() {
     return urlParams.get('server_id');
 }
 
+// Function for regular users to select a server from dropdown
+function selectServer() {
+    const select = document.getElementById('server-select');
+    const serverId = select.value;
+
+    if (!serverId) {
+        alert('Please select a machine from the dropdown');
+        return;
+    }
+
+    // Reload page with server_id parameter
+    window.location.href = `/?server_id=${serverId}`;
+}
+
 async function loadStaticStats() {
     try {
         const serverId = getServerIdFromUrl();
@@ -142,17 +156,47 @@ async function showWaitingForAgents() {
                 `;
             } else {
                 // Agents are online but no server_id selected
+                // Check user role to show appropriate options
+                const authResponse = await fetch('/auth/check');
+                const authData = await authResponse.json();
+                const isAdmin = authData.isAuthenticated && authData.user?.role === 'admin';
+
                 banner.className = 'alert alert-info text-center p-5 m-4';
-                banner.innerHTML = `
-                    <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
-                    <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
-                    <p class="mb-3">Please select a machine to monitor from the Machines page.</p>
-                    <div class="mt-4">
-                        <a href="/machines" class="btn btn-primary">
-                            <i class="bi bi-list-ul me-2"></i>View Machines
-                        </a>
-                    </div>
-                `;
+
+                if (isAdmin) {
+                    // Admin users: show link to Machines page
+                    banner.innerHTML = `
+                        <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
+                        <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
+                        <p class="mb-3">Please select a machine to monitor from the Machines page.</p>
+                        <div class="mt-4">
+                            <a href="/machines" class="btn btn-primary">
+                                <i class="bi bi-list-ul me-2"></i>View Machines
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    // Regular users: show dropdown to select server
+                    let serverOptions = '';
+                    onlineServers.forEach(server => {
+                        serverOptions += `<option value="${server._id}">${server.identifier}</option>`;
+                    });
+
+                    banner.innerHTML = `
+                        <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
+                        <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
+                        <p class="mb-3">Please select a machine to monitor:</p>
+                        <div class="mt-4">
+                            <select id="server-select" class="form-select form-select-lg mb-3" style="max-width: 400px; margin: 0 auto;">
+                                <option value="">Choose a machine...</option>
+                                ${serverOptions}
+                            </select>
+                            <button class="btn btn-primary" onclick="selectServer()">
+                                <i class="bi bi-check-circle me-2"></i>Monitor This Machine
+                            </button>
+                        </div>
+                    `;
+                }
             }
 
             container.parentElement.insertBefore(banner, container);
@@ -503,12 +547,70 @@ async function getDiskUsage() {
     document.getElementById('disk-usage-percent').textContent = diskBody[4] || 'N/A'
 }
 
+// Machine switcher functions
+async function initMachineSwitcher() {
+    const serverId = getServerIdFromUrl();
+    if (!serverId) {
+        // No server selected, hide switcher
+        document.getElementById('machine-selector-bar').style.display = 'none';
+        return;
+    }
+
+    try {
+        // Fetch all servers
+        const response = await fetch('/api/servers');
+        const servers = await response.json();
+
+        // Filter to online servers only (seen in last 2 minutes)
+        const now = new Date();
+        const onlineServers = servers.filter(server => {
+            const lastSeen = new Date(server.lastSeen);
+            const diffMinutes = Math.floor((now - lastSeen) / 60000);
+            return diffMinutes < 2;
+        });
+
+        if (onlineServers.length > 0) {
+            // Show machine selector
+            document.getElementById('machine-selector-bar').style.display = 'block';
+
+            // Populate dropdown
+            const select = document.getElementById('machine-switcher');
+            select.innerHTML = '';
+
+            onlineServers.forEach(server => {
+                const option = document.createElement('option');
+                option.value = server._id;
+                option.textContent = server.identifier;
+                if (server._id === serverId) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading machines for switcher:', error);
+    }
+}
+
+function switchMachine() {
+    const select = document.getElementById('machine-switcher');
+    const serverId = select.value;
+    if (serverId) {
+        window.location.href = `/?server_id=${serverId}`;
+    }
+}
+
+function clearMachineSelection() {
+    window.location.href = '/';
+}
+
 loadStaticStats()
 loadStats()
 getOsRelease()
 getDiskUsage()
 loadNetworkStats()
 loadCpuPerCore()
+initMachineSwitcher() // Initialize machine switcher
 
 // Start intervals - they will be cleared if banner needs to be shown
 intervalIds.push(setInterval(loadStats, 1000)); // auto-refresh every 1 second

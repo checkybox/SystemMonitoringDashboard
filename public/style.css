@@ -176,7 +176,9 @@ body::before {
 }
 
 .metric-value {
-    font-family: 'Courier New', monospace;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
     color: rgba(0, 0, 0, 0.9);
     font-size: 1rem;
     text-align: right;

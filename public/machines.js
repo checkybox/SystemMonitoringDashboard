@@ -151,7 +151,14 @@ window.deleteMachine = async function(serverId, identifier) {
             loadMachines(); // Reload the list
         } else {
             const error = await response.json();
-            alert('Error deleting machine: ' + error.error);
+
+            // Check if it's an authentication error
+            if (response.status === 401) {
+                alert('You must be logged in to perform this action. Redirecting to login page...');
+                window.location.href = '/login';
+            } else {
+                alert('Error deleting machine: ' + error.error);
+            }
         }
     } catch (error) {
         console.error('Error deleting machine:', error);
@@ -303,7 +310,14 @@ window.saveMachine = async function() {
             loadMachines();
         } else {
             const error = await response.json();
-            alert('Error: ' + error.error);
+
+            // Check if it's an authentication error
+            if (response.status === 401) {
+                alert('You must be logged in to perform this action. Redirecting to login page...');
+                window.location.href = '/login';
+            } else {
+                alert('Error: ' + error.error);
+            }
         }
     } catch (error) {
         console.error('Error saving machine:', error);

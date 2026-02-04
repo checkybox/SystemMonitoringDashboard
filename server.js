@@ -3,11 +3,17 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
 
 // Import routers
 import pageRoutes from './routes/pageRoutes.js';
 import apiRoutes from './routes/apiRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+
+// Import middleware
+import { addUserToLocals } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,6 +23,28 @@ dotenv.config();
 
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
+
+// Session configuration
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
+    resave: false,
+    saveUninitialized: false,
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URL,
+        collectionName: 'sessions',
+        ttl: 24 * 60 * 60 // 1 day in seconds
+    }),
+    cookie: {
+        httpOnly: true, // Prevents client-side JS from accessing the cookie
+        secure: process.env.NODE_ENV === 'production', // Use HTTPS in production
+        maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+        sameSite: 'lax' // CSRF protection
+    },
+    name: 'sessionId' // Custom cookie name (don't use default 'connect.sid')
+}));
+
+// Add user info to all requests
+app.use(addUserToLocals);
 
 const PORT = process.env.PORT || 3000
 const MONGO_URL = process.env.MONGO_URL
@@ -52,6 +80,7 @@ app.use('/assets', express.static('assets', {
 }));
 
 // Use routers
+app.use('/auth', authRoutes);
 app.use('/', pageRoutes);
 app.use('/api', apiRoutes);
 app.use('/', contactRoutes);

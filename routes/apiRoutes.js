@@ -2,6 +2,8 @@ import express from 'express';
 import os from 'os';
 import { exec } from 'child_process';
 import mongoose from 'mongoose';
+import { requireAuth } from '../middleware/auth.js';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 
@@ -94,8 +96,8 @@ function isHostedEnvironment() {
            hostname.includes('vercel');
 }
 
-// Check if running in hosted mode
-router.get('/environment', (req, res) => {
+// Check if running in hosted mode (PROTECTED)
+router.get('/environment', requireAuth, (req, res) => {
     res.json({
         isHosted: isHostedEnvironment(),
         hostname: os.hostname()
@@ -196,8 +198,8 @@ router.post('/agent-metrics', async (req, res) => {
     }
 });
 
-// Static system stats
-router.get('/static-stats', async (req, res) => {
+// Static system stats (PROTECTED)
+router.get('/static-stats', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
 
@@ -258,9 +260,9 @@ router.get('/static-stats', async (req, res) => {
     }
 });
 
-// Dynamic system stats (saves to database with server association)
+// Dynamic system stats (saves to database with server association) (PROTECTED)
 // In hosted mode, returns latest metrics from database instead of collecting locally
-router.get('/stats', async (req, res) => {
+router.get('/stats', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
 
@@ -420,8 +422,8 @@ router.get('/stats', async (req, res) => {
     }
 });
 
-// OS release information
-router.get('/os-release', (req, res) => {
+// OS release information (PROTECTED)
+router.get('/os-release', requireAuth, (req, res) => {
     exec('cat /etc/os-release', (err, stdout) => {
         if (err) {
             console.error(err);
@@ -432,8 +434,8 @@ router.get('/os-release', (req, res) => {
     });
 });
 
-// Disk usage
-router.get('/disk-usage', async (req, res) => {
+// Disk usage (PROTECTED)
+router.get('/disk-usage', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
 
@@ -477,8 +479,8 @@ router.get('/disk-usage', async (req, res) => {
     }
 });
 
-// Network statistics from /proc/net/dev
-router.get('/network-stats', async (req, res) => {
+// Network statistics from /proc/net/dev (PROTECTED)
+router.get('/network-stats', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
 
@@ -571,8 +573,8 @@ router.get('/network-stats', async (req, res) => {
     }
 });
 
-// Per-core CPU usage
-router.get('/cpu-per-core', async (req, res) => {
+// Per-core CPU usage (PROTECTED)
+router.get('/cpu-per-core', requireAuth, async (req, res) => {
     try {
         const hosted = isHostedEnvironment();
 
@@ -662,8 +664,8 @@ router.get('/cpu-per-core', async (req, res) => {
 
 // ==================== CRUD API ROUTES FOR SERVERS ====================
 
-// GET /api/servers - Return all servers (with filtering, sorting, projection support)
-router.get('/servers', async (req, res) => {
+// GET /api/servers - Return all servers with metrics count (PROTECTED)
+router.get('/servers', requireAuth, async (req, res) => {
     try {
         const { sort, limit, fields } = req.query;
 
@@ -706,8 +708,8 @@ router.get('/servers', async (req, res) => {
     }
 });
 
-// GET /api/servers/:id - Return a single server by MongoDB _id or identifier
-router.get('/servers/:id', async (req, res) => {
+// GET /api/servers/:id - Return a single server by MongoDB _id or identifier (PROTECTED)
+router.get('/servers/:id', requireAuth, async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -740,8 +742,8 @@ router.get('/servers/:id', async (req, res) => {
     }
 });
 
-// POST /api/servers - Create a new server manually
-router.post('/servers', async (req, res) => {
+// POST /api/servers - Create a new server manually (ADMIN ONLY)
+router.post('/servers', requireAdmin, async (req, res) => {
     const { hostname, username, arch, os_type, release, cpuModel, totalMemory } = req.body;
 
     // Validate required fields
@@ -781,8 +783,8 @@ router.post('/servers', async (req, res) => {
     }
 });
 
-// PUT /api/servers/:id - Update an existing server by MongoDB _id
-router.put('/servers/:id', async (req, res) => {
+// PUT /api/servers/:id - Update an existing server by MongoDB _id (ADMIN ONLY)
+router.put('/servers/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { hostname, username, arch, os_type, release, cpuModel, totalMemory } = req.body;
 
@@ -836,8 +838,8 @@ router.put('/servers/:id', async (req, res) => {
     }
 });
 
-// DELETE /api/servers/:id - Delete a server by MongoDB _id (supports dry-run)
-router.delete('/servers/:id', async (req, res) => {
+// DELETE /api/servers/:id - Delete a server by MongoDB _id (supports dry-run) (ADMIN ONLY)
+router.delete('/servers/:id', requireAdmin, async (req, res) => {
     const { id } = req.params;
     const { dryRun } = req.query;
 
@@ -885,8 +887,8 @@ router.delete('/servers/:id', async (req, res) => {
     }
 });
 
-// GET /api/servers/:id/metrics - Get metrics for a specific server
-router.get('/servers/:id/metrics', async (req, res) => {
+// GET /api/servers/:id/metrics - Get metrics for a specific server (PROTECTED)
+router.get('/servers/:id/metrics', requireAuth, async (req, res) => {
     const { id } = req.params;
     const { limit, since } = req.query;
 

@@ -41,6 +41,29 @@
     </nav>
 </div>
 
+<!-- Machine Selector Bar (shown when server_id is in URL) -->
+<div id="machine-selector-bar" class="container-fluid px-4 py-2 bg-light border-bottom" style="display: none;">
+    <div class="row align-items-center">
+        <div class="col-auto">
+            <span class="text-muted">
+                <i class="bi bi-server me-2"></i>
+                Monitoring:
+            </span>
+        </div>
+        <div class="col-auto">
+            <select id="machine-switcher" class="form-select form-select-sm" onchange="switchMachine()">
+                <option value="">Loading machines...</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearMachineSelection()">
+                <i class="bi bi-x-circle me-1"></i>
+                View All
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Main container -->
 <div class="container-fluid px-4 mb-5" id="dashboard-animated">
     <div class="grid-stack">
@@ -216,6 +239,7 @@
     // Better animation using CSS class
     document.getElementById('dashboard-animated').classList.add('animate-in');
 </script>
+<script src="/auth.js"></script>
 <script src="/script.js"></script>
 <script src="/theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
