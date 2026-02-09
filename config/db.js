@@ -1,9 +1,5 @@
 import mongoose from 'mongoose';
 
-/**
- * Connect to MongoDB database
- * @param {string} mongoUrl - MongoDB connection URL
- */
 export async function connectDB(mongoUrl) {
     try {
         await mongoose.connect(mongoUrl);

@@ -48,9 +48,7 @@ router.get('/disk-usage', requireAuth, getDiskUsage);
 router.get('/network-stats', requireAuth, getNetworkStats);
 
 // Per-core CPU usage (PROTECTED)
-router.get('/cpu-per-core', requireAuth, getCpuPerCore);
-
-// ==================== CRUD API ROUTES FOR SERVERS ====================
+router.get('/cpu-per-core', requireAuth, getCpuPerCore)
 
 // GET /api/servers - Return all servers with metrics count (PROTECTED)
 router.get('/servers', requireAuth, getServers);

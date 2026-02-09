@@ -1,10 +1,6 @@
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 
-/**
- * Create and configure session middleware
- * @returns {Function} Express session middleware
- */
 export function createSessionMiddleware() {
     return session({
         secret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
