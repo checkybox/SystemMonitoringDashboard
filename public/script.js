@@ -1,7 +1,20 @@
+// Global state variables - declared at top of file
+const intervalIds = [];
+let previousCpuStats = null;
+let previousNetworkStats = null;
+let lastNetworkStatsTime = null;
+let bannerShown = false;
+let bannerPromise = null;
+
 // Get server_id from URL parameters (for viewing specific server metrics)
 function getServerIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('server_id');
+}
+
+function clearAllIntervals() {
+    intervalIds.forEach(id => clearInterval(id));
+    intervalIds.length = 0;
 }
 
 // Function for regular users to select a server from dropdown
@@ -89,11 +102,6 @@ async function loadStats() {
         console.error('Error loading stats:', error);
     }
 }
-
-// Flag to track if banner is already shown
-let bannerShown = false;
-// Store the promise to ensure only one execution
-let bannerPromise = null;
 
 // Show "waiting for agents" message when in hosted mode with no connected agents
 async function showWaitingForAgents() {
@@ -225,20 +233,6 @@ async function showWaitingForAgents() {
     return bannerPromise;
 }
 
-// Store interval IDs to clear them when needed
-const intervalIds = [];
-
-function clearAllIntervals() {
-    intervalIds.forEach(id => clearInterval(id));
-    intervalIds.length = 0; // Clear the array
-}
-
-// Store previous network stats for speed calculation
-let previousNetworkStats = null;
-let lastNetworkStatsTime = null;
-
-// Store previous CPU stats for usage calculation
-let previousCpuStats = null;
 
 async function loadCpuPerCore() {
     try {

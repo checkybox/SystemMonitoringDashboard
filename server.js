@@ -52,18 +52,6 @@ app.use(addUserToLocals);
 const PORT = process.env.PORT || 3000
 const MONGO_URL = process.env.MONGO_URL
 
-async function main() {
-    await mongoose.connect(MONGO_URL)
-    console.log("MongoDB connected")
-
-
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`)
-    })
-}
-
-main().catch(err => console.log(err));
-
 // logger middleware
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`)
@@ -87,6 +75,18 @@ app.use('/auth', authRoutes);
 app.use('/', pageRoutes);
 app.use('/api', apiRoutes);
 app.use('/', contactRoutes);
+
+async function main() {
+    await mongoose.connect(MONGO_URL)
+    console.log("MongoDB connected")
+
+
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`)
+    })
+}
+
+main().catch(err => console.log(err));
 
 // 404 handler - must be last
 app.use((req, res) => {
