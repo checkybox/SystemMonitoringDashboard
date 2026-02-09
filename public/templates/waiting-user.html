@@ -1,0 +1,13 @@
+<i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
+<h3>{{onlineCount}} Agent{{pluralS}} Online</h3>
+<p class="mb-3">Please select a machine to monitor:</p>
+<div class="mt-4">
+    <select id="server-select" class="form-select form-select-lg mb-3" style="max-width: 400px; margin: 0 auto;">
+        <option value="">Choose a machine...</option>
+        {{options}}
+    </select>
+    <button class="btn btn-primary" onclick="selectServer()">
+        <i class="bi bi-check-circle me-2"></i>Monitor This Machine
+    </button>
+</div>
+

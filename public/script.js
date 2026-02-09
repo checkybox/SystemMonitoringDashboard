@@ -124,6 +124,7 @@ async function showWaitingForAgents() {
         bannerShown = true;
 
         try {
+            const templates = await ensureTemplates();
             // Check how many servers are ONLINE (seen in last 2 minutes)
             const response = await fetch('/api/servers');
             const allServers = await response.json();
@@ -140,20 +141,8 @@ async function showWaitingForAgents() {
             banner.id = 'waiting-banner';
 
             if (onlineServers.length === 0) {
-                // No agents online
                 banner.className = 'alert alert-warning text-center p-5 m-4';
-                banner.innerHTML = `
-                    <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block text-warning"></i>
-                    <h3>Waiting for Agent Connection</h3>
-                    <p class="mb-3">No monitoring agents are currently online.</p>
-                    <p class="text-muted">To monitor your machines, please run the agent script on each machine you want to monitor.</p>
-                    <p class="text-muted">The agent script is available in the repository. Check the README for setup instructions.</p>
-                    <div class="mt-4">
-                        <button class="btn btn-primary" onclick="location.reload()">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                        </button>
-                    </div>
-                `;
+                banner.innerHTML = templates.waitNone;
             } else {
                 // Agents are online but no server_id selected
                 // Check user role to show appropriate options
@@ -164,38 +153,21 @@ async function showWaitingForAgents() {
                 banner.className = 'alert alert-info text-center p-5 m-4';
 
                 if (isAdmin) {
-                    // Admin users: show link to Machines page
-                    banner.innerHTML = `
-                        <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
-                        <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
-                        <p class="mb-3">Please select a machine to monitor from the Machines page.</p>
-                        <div class="mt-4">
-                            <a href="/machines" class="btn btn-primary">
-                                <i class="bi bi-list-ul me-2"></i>View Machines
-                            </a>
-                        </div>
-                    `;
+                    banner.innerHTML = renderTpl(templates.waitAdmin, {
+                        onlineCount: onlineServers.length,
+                        pluralS: onlineServers.length > 1 ? 's' : ''
+                    });
                 } else {
-                    // Regular users: show dropdown to select server
                     let serverOptions = '';
                     onlineServers.forEach(server => {
                         serverOptions += `<option value="${server._id}">${server.identifier}</option>`;
                     });
 
-                    banner.innerHTML = `
-                        <i class="bi bi-server fs-1 mb-3 d-block text-info"></i>
-                        <h3>${onlineServers.length} Agent${onlineServers.length > 1 ? 's' : ''} Online</h3>
-                        <p class="mb-3">Please select a machine to monitor:</p>
-                        <div class="mt-4">
-                            <select id="server-select" class="form-select form-select-lg mb-3" style="max-width: 400px; margin: 0 auto;">
-                                <option value="">Choose a machine...</option>
-                                ${serverOptions}
-                            </select>
-                            <button class="btn btn-primary" onclick="selectServer()">
-                                <i class="bi bi-check-circle me-2"></i>Monitor This Machine
-                            </button>
-                        </div>
-                    `;
+                    banner.innerHTML = renderTpl(templates.waitUser, {
+                        onlineCount: onlineServers.length,
+                        pluralS: onlineServers.length > 1 ? 's' : '',
+                        options: serverOptions
+                    });
                 }
             }
 
@@ -203,20 +175,11 @@ async function showWaitingForAgents() {
             container.style.display = 'none';
         } catch (error) {
             console.error('Error checking servers:', error);
-            // Fallback banner
+            const templates = await ensureTemplates();
             const banner = document.createElement('div');
             banner.id = 'waiting-banner';
             banner.className = 'alert alert-warning text-center p-5 m-4';
-            banner.innerHTML = `
-                <i class="bi bi-exclamation-triangle-fill fs-1 mb-3 d-block"></i>
-                <h3>Loading...</h3>
-                <p class="mb-3">Checking for connected agents...</p>
-                <div class="mt-4">
-                    <button class="btn btn-primary" onclick="location.reload()">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                    </button>
-                </div>
-            `;
+            banner.innerHTML = templates.waitFallback;
             container.parentElement.insertBefore(banner, container);
             container.style.display = 'none';
         }
@@ -225,20 +188,47 @@ async function showWaitingForAgents() {
     return bannerPromise;
 }
 
-// Store interval IDs to clear them when needed
-const intervalIds = [];
-
-function clearAllIntervals() {
-    intervalIds.forEach(id => clearInterval(id));
-    intervalIds.length = 0; // Clear the array
+// Template helpers for loading HTML partials from /public/templates
+const tplCache = {};
+async function loadTpl(name) {
+    if (tplCache[name]) return tplCache[name];
+    const res = await fetch(`/templates/${name}.html`);
+    if (!res.ok) throw new Error(`Failed to load template: ${name}`);
+    const text = await res.text();
+    tplCache[name] = text;
+    return text;
+}
+function renderTpl(tpl, data = {}) {
+    return Object.entries(data).reduce((out, [key, val]) => {
+        const safeVal = val === undefined || val === null ? '' : val;
+        return out.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), safeVal);
+    }, tpl);
 }
 
-// Store previous network stats for speed calculation
-let previousNetworkStats = null;
-let lastNetworkStatsTime = null;
-
-// Store previous CPU stats for usage calculation
-let previousCpuStats = null;
+// Preload templates used on this page
+let templatesPromise = null;
+function ensureTemplates() {
+    if (!templatesPromise) {
+        templatesPromise = Promise.all([
+            loadTpl('cpu-total'),
+            loadTpl('cpu-core'),
+            loadTpl('network-interface'),
+            loadTpl('waiting-no-agents'),
+            loadTpl('waiting-admin'),
+            loadTpl('waiting-user'),
+            loadTpl('waiting-fallback')
+        ]).then(([cpuTotal, cpuCore, netIface, waitNone, waitAdmin, waitUser, waitFallback]) => ({
+            cpuTotal,
+            cpuCore,
+            netIface,
+            waitNone,
+            waitAdmin,
+            waitUser,
+            waitFallback
+        }));
+    }
+    return templatesPromise;
+}
 
 async function loadCpuPerCore() {
     try {
@@ -248,7 +238,7 @@ async function loadCpuPerCore() {
         const currentStats = await res.json();
 
         if (previousCpuStats) {
-            displayCpuBars(currentStats, previousCpuStats);
+            await displayCpuBars(currentStats, previousCpuStats);
         }
 
         previousCpuStats = currentStats;
@@ -258,7 +248,7 @@ async function loadCpuPerCore() {
     }
 }
 
-function displayCpuBars(currentStats, previousStats) {
+async function displayCpuBars(currentStats, previousStats) {
     const container = document.getElementById('cpu-bars-container');
 
     if (!currentStats || currentStats.length === 0) {
@@ -306,55 +296,26 @@ function displayCpuBars(currentStats, previousStats) {
     const needsInit = !container.querySelector('.cpu-bar-row');
 
     if (needsInit) {
+        const templates = await ensureTemplates();
         // Create total CPU usage bar at the top
-        let html = `
-            <div class="mb-3 pb-3 border-bottom">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="fw-bold">Total CPU Load</span>
-                    <span class="fw-bold cpu-total-percent">0.0%</span>
-                </div>
-                <div class="progress" style="height: 24px; border-radius: 12px;">
-                    <div class="progress-bar cpu-total-bar bg-success" role="progressbar"
-                         style="width: 0%; transition: width 0.8s ease-in-out, background-color 0.3s ease;"
-                         aria-valuenow="0"
-                         aria-valuemin="0"
-                         aria-valuemax="100">
-                    </div>
-                </div>
-            </div>
-            <div class="row g-3">
-        `;
+        let html = renderTpl(templates.cpuTotal, {});
+        html += '<div class="row g-3">';
 
         // Create columns with per-core bars
-        // We want 3 columns with 4 CPUs each, filling columns first
         const numCols = 3;
         const numRows = Math.ceil(currentStats.length / numCols);
 
-        // Create columns first
         for (let col = 0; col < numCols; col++) {
             html += '<div class="col-4">';
 
-            // Fill each column with CPUs
             for (let row = 0; row < numRows; row++) {
                 const cpuIndex = col * numRows + row;
                 if (cpuIndex < currentStats.length) {
                     const current = currentStats[cpuIndex];
-                    html += `
-                        <div class="cpu-bar-row" data-cpu="${current.name}">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <small class="cpu-label">${current.name.toUpperCase()}</small>
-                                <small class="cpu-percent">0.0%</small>
-                            </div>
-                            <div class="progress cpu-progress-bar">
-                                <div class="progress-bar bg-success" role="progressbar" 
-                                     style="width: 0%" 
-                                     aria-valuenow="0" 
-                                     aria-valuemin="0" 
-                                     aria-valuemax="100">
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                    html += renderTpl(templates.cpuCore, {
+                        cpuName: current.name,
+                        cpuLabel: current.name.toUpperCase()
+                    });
                 }
             }
 
@@ -424,7 +385,7 @@ async function loadNetworkStats() {
         const currentStats = await res.json();
         const currentTime = Date.now();
 
-        displayNetworkStats(currentStats, currentTime);
+        await displayNetworkStats(currentStats, currentTime);
 
         // Store current stats for next calculation
         previousNetworkStats = currentStats;
@@ -435,19 +396,7 @@ async function loadNetworkStats() {
     }
 }
 
-function formatBytes(bytes, decimals = 2) {
-    if (bytes === 0) return '0 B';
-
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-}
-
-function displayNetworkStats(currentStats, currentTime) {
+async function displayNetworkStats(currentStats, currentTime) {
     const container = document.getElementById('network-interfaces');
 
     if (!currentStats || Object.keys(currentStats).length === 0) {
@@ -456,6 +405,7 @@ function displayNetworkStats(currentStats, currentTime) {
     }
 
     let html = '';
+    const templates = await ensureTemplates();
 
     for (const [interfaceName, stats] of Object.entries(currentStats)) {
         // Calculate speeds if we have previous data
@@ -471,47 +421,13 @@ function displayNetworkStats(currentStats, currentTime) {
             txSpeed = txDiff / timeDiff;
         }
 
-        html += `
-            <div class="mb-4 pb-3 border-bottom">
-                <h6 class="fw-bold mb-3">
-                    <i class="bi bi-ethernet me-2"></i>${interfaceName}
-                </h6>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-download metric-icon"></i>
-                                Download
-                            </span>
-                            <span class="metric-value">${formatBytes(rxSpeed)}/s</span>
-                        </div>
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-arrow-down-circle metric-icon"></i>
-                                Total RX
-                            </span>
-                            <span class="metric-value">${formatBytes(stats.rxBytes)}</span>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-upload metric-icon"></i>
-                                Upload
-                            </span>
-                            <span class="metric-value">${formatBytes(txSpeed)}/s</span>
-                        </div>
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-arrow-up-circle metric-icon"></i>
-                                Total TX
-                            </span>
-                            <span class="metric-value">${formatBytes(stats.txBytes)}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
+        html += renderTpl(templates.netIface, {
+            interfaceName,
+            rxSpeed: formatBytes(rxSpeed) + '/s',
+            rxBytes: formatBytes(stats.rxBytes),
+            txSpeed: formatBytes(txSpeed) + '/s',
+            txBytes: formatBytes(stats.txBytes)
+        });
     }
 
     container.innerHTML = html;

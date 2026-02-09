@@ -2,21 +2,60 @@
 // Version: 2025-01-19-v4 (cache bust - plain text OS names)
 console.log('machines.js loaded - version 2025-01-19-v4');
 
+// Template helpers
+const templateCache = {};
+async function loadTemplate(name) {
+    if (templateCache[name]) return templateCache[name];
+    const res = await fetch(`/templates/${name}.html`);
+    if (!res.ok) throw new Error(`Failed to load template: ${name}`);
+    const text = await res.text();
+    templateCache[name] = text;
+    return text;
+}
+function renderTemplate(template, data = {}) {
+    return Object.entries(data).reduce((html, [key, value]) => {
+        return html.replace(new RegExp(`{{\\s*${key}\\s*}}`, 'g'), value ?? '');
+    }, template);
+}
+
+// Shared fetch helper with basic auth handling
+async function fetchJson(url, options = {}) {
+    const response = await fetch(url, options);
+    if (response.status === 401) {
+        alert('You must be logged in to perform this action. Redirecting to login page...');
+        window.location.href = '/login';
+        return null;
+    }
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(error.error || 'Request failed');
+    }
+    return response.json();
+}
+
+// Preload templates used on this page
+let machineTemplatesPromise = null;
+function ensureMachineTemplates() {
+    if (!machineTemplatesPromise) {
+        machineTemplatesPromise = Promise.all([
+            loadTemplate('machine-card'),
+            loadTemplate('machines-empty')
+        ]).then(([card, empty]) => ({ card, empty }));
+    }
+    return machineTemplatesPromise;
+}
+
 // Load all machines from API
 async function loadMachines() {
     try {
-        const response = await fetch('/api/servers');
-        const servers = await response.json();
+        const servers = await fetchJson('/api/servers');
+        if (!servers) return;
 
+        const { card: cardTpl, empty: emptyTpl } = await ensureMachineTemplates();
         const container = document.getElementById('machines-container');
 
         if (servers.length === 0) {
-            container.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle me-2"></i>
-                    No machines found. Machines are automatically registered when they connect to the dashboard.
-                </div>
-            `;
+            container.innerHTML = emptyTpl;
             return;
         }
 
@@ -28,91 +67,23 @@ async function loadMachines() {
             const diffMinutes = Math.floor((now - lastSeen) / 60000);
             const isOnline = diffMinutes < 2; // Online if seen in last 2 minutes
 
-            // Debug logging
-            console.log(`Server: ${server.identifier}, Last Seen: ${lastSeen}, Diff: ${diffMinutes}m, Online: ${isOnline}`);
-
             const statusBadge = isOnline
                 ? '<span class="badge bg-success">Online</span>'
                 : `<span class="badge bg-secondary">Offline (${diffMinutes}m ago)</span>`;
 
             const memoryGB = (server.totalMemory / 1024 / 1024 / 1024).toFixed(2);
 
-            html += `
-                <div class="col-12 col-md-6 col-lg-4">
-                    <div class="card-floating h-100">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-header-custom mb-0">
-                                <i class="bi bi-pc-display me-2"></i>
-                                ${server.identifier}
-                            </h5>
-                            ${statusBadge}
-                        </div>
-
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-pc-display-horizontal metric-icon"></i>
-                                OS
-                            </span>
-                            <span class="metric-value">${server.os_type}</span>
-                        </div>
-
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-gear-fill metric-icon"></i>
-                                Kernel
-                            </span>
-                            <span class="metric-value">${server.release}</span>
-                        </div>
-
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-cpu metric-icon"></i>
-                                CPU
-                            </span>
-                            <span class="metric-value">${server.cpuModel || 'Unknown'}</span>
-                        </div>
-
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-memory metric-icon"></i>
-                                Memory
-                            </span>
-                            <span class="metric-value">${memoryGB} GB</span>
-                        </div>
-
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-clock-history metric-icon"></i>
-                                Last Seen
-                            </span>
-                            <span class="metric-value">${lastSeen.toLocaleString()}</span>
-                        </div>
-
-                        <div class="metric-row">
-                            <span class="metric-label">
-                                <i class="bi bi-bar-chart metric-icon"></i>
-                                Metrics Stored
-                            </span>
-                            <span class="metric-value">${server.metricsCount || 0}</span>
-                        </div>
-
-                        <div class="mt-3 d-flex gap-2">
-                            <button class="btn btn-sm btn-primary" onclick="viewMetrics('${server._id}')">
-                                <i class="bi bi-graph-up me-1"></i>
-                                View Metrics
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="openEditModal('${server._id}')">
-                                <i class="bi bi-pencil me-1"></i>
-                                Edit
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="deleteMachine('${server._id}', '${server.identifier}')">
-                                <i class="bi bi-trash me-1"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
+            html += renderTemplate(cardTpl, {
+                serverId: server._id,
+                identifier: server.identifier,
+                statusBadge,
+                os_type: server.os_type,
+                release: server.release,
+                cpuModel: server.cpuModel || 'Unknown',
+                memoryGB,
+                lastSeen: lastSeen.toLocaleString(),
+                metricsCount: server.metricsCount || 0
+            });
         });
 
         html += '</div>';
@@ -142,24 +113,9 @@ window.deleteMachine = async function(serverId, identifier) {
     }
 
     try {
-        const response = await fetch(`/api/servers/${serverId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.ok) {
-            alert('Machine deleted successfully');
-            loadMachines(); // Reload the list
-        } else {
-            const error = await response.json();
-
-            // Check if it's an authentication error
-            if (response.status === 401) {
-                alert('You must be logged in to perform this action. Redirecting to login page...');
-                window.location.href = '/login';
-            } else {
-                alert('Error deleting machine: ' + error.error);
-            }
-        }
+        await fetchJson(`/api/servers/${serverId}`, { method: 'DELETE' });
+        alert('Machine deleted successfully');
+        loadMachines();
     } catch (error) {
         console.error('Error deleting machine:', error);
         alert('Error deleting machine. Please try again.');
@@ -198,14 +154,8 @@ window.openEditModal = async function(serverId) {
     }
 
     try {
-        const response = await fetch(`/api/servers/${serverId}`);
-
-        if (!response.ok) {
-            alert('Error loading machine data');
-            return;
-        }
-
-        const server = await response.json();
+        const server = await fetchJson(`/api/servers/${serverId}`);
+        if (!server) return;
 
         // Populate form
         document.getElementById('machineId').value = server._id;
@@ -274,51 +224,24 @@ window.saveMachine = async function() {
     }
 
     try {
-        let response;
+        const options = {
+            method: machineId ? 'PUT' : 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        };
 
-        if (machineId) {
-            // Update existing machine (PUT)
-            response = await fetch(`/api/servers/${machineId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-        } else {
-            // Create new machine (POST)
-            response = await fetch('/api/servers', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
+        await fetchJson(machineId ? `/api/servers/${machineId}` : '/api/servers', options);
+
+        alert(machineId ? 'Machine updated successfully!' : 'Machine created successfully!');
+
+        // Close modal
+        const modalElement = document.getElementById('machineModal');
+        const modal = bootstrap.Modal.getInstance(modalElement);
+        if (modal) {
+            modal.hide();
         }
 
-        if (response.ok) {
-            alert(machineId ? 'Machine updated successfully!' : 'Machine created successfully!');
-
-            // Close modal
-            const modalElement = document.getElementById('machineModal');
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-                modal.hide();
-            }
-
-            // Reload machines list
-            loadMachines();
-        } else {
-            const error = await response.json();
-
-            // Check if it's an authentication error
-            if (response.status === 401) {
-                alert('You must be logged in to perform this action. Redirecting to login page...');
-                window.location.href = '/login';
-            } else {
-                alert('Error: ' + error.error);
-            }
-        }
+        loadMachines();
     } catch (error) {
         console.error('Error saving machine:', error);
         alert('Error saving machine. Please try again.');
