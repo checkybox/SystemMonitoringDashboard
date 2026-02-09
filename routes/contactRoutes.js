@@ -2,13 +2,14 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { requireAdmin } from '../middleware/adminAuth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Handle contact form submission
-router.post('/contact', (req, res) => {
+// Handle contact form submission - ADMIN ONLY
+router.post('/contact', requireAdmin, (req, res) => {
     const { name, email, message } = req.body;
 
     if (!name || !email || !message) {

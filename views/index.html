@@ -24,6 +24,21 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div id="Navbar" class="navbar-collapse collapse">
+                <!-- Machine Selector on LEFT (Regular users only, shown when monitoring) -->
+                <ul class="navbar-nav fs-4">
+                    <li class="nav-item" id="machine-selector-nav" style="display: none;">
+                        <select id="machine-switcher" class="form-select form-select-sm mt-2" onchange="switchMachine()" style="min-width: 200px;">
+                            <option value="">Select machine...</option>
+                        </select>
+                    </li>
+                    <li class="nav-item" id="clear-selection-nav" style="display: none;">
+                        <button class="btn btn-sm btn-outline-secondary mt-2 ms-2" onclick="clearMachineSelection()">
+                            <i class="bi bi-x-circle me-1"></i>
+                            View All
+                        </button>
+                    </li>
+                </ul>
+                <!-- Main navigation on RIGHT -->
                 <ul class="navbar-nav ms-auto fs-4">
                     <li class="nav-item"><a class="nav-link fw-light active" href="/">Home</a></li>
                     <li class="nav-item"><a class="nav-link fw-light" href="/machines">Machines</a></li>
@@ -216,6 +231,7 @@
     // Better animation using CSS class
     document.getElementById('dashboard-animated').classList.add('animate-in');
 </script>
+<script src="/auth.js"></script>
 <script src="/script.js"></script>
 <script src="/theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>

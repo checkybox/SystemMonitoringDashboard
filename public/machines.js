@@ -1,6 +1,6 @@
 // Machines page functionality
-// Version: 2025-01-19-v4 (cache bust - plain text OS names)
-console.log('machines.js loaded - version 2025-01-19-v4');
+// Version: 2026-02-09-v1 (fixed template loading issue)
+console.log('machines.js loaded - version 2026-02-09-v1');
 
 // Load all machines from API
 async function loadMachines() {
@@ -151,7 +151,14 @@ window.deleteMachine = async function(serverId, identifier) {
             loadMachines(); // Reload the list
         } else {
             const error = await response.json();
-            alert('Error deleting machine: ' + error.error);
+
+            // Check if it's an authentication error
+            if (response.status === 401) {
+                alert('You must be logged in to perform this action. Redirecting to login page...');
+                window.location.href = '/login';
+            } else {
+                alert('Error deleting machine: ' + error.error);
+            }
         }
     } catch (error) {
         console.error('Error deleting machine:', error);
@@ -303,7 +310,14 @@ window.saveMachine = async function() {
             loadMachines();
         } else {
             const error = await response.json();
-            alert('Error: ' + error.error);
+
+            // Check if it's an authentication error
+            if (response.status === 401) {
+                alert('You must be logged in to perform this action. Redirecting to login page...');
+                window.location.href = '/login';
+            } else {
+                alert('Error: ' + error.error);
+            }
         }
     } catch (error) {
         console.error('Error saving machine:', error);

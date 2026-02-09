@@ -1,5 +1,4 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,6 +7,14 @@ import { fileURLToPath } from 'url';
 import pageRoutes from './routes/pageRoutes.js';
 import apiRoutes from './routes/apiRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+
+// Import middleware
+import { addUserToLocals } from './middleware/auth.js';
+
+// Import config
+import { connectDB } from './config/db.js';
+import { createSessionMiddleware } from './config/session.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,23 +22,20 @@ const __dirname = path.dirname(__filename);
 const app = express();
 dotenv.config();
 
+// Trust proxy - for Render (behind reverse proxy)
+app.set('trust proxy', 1);
+
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
+// Session configuration
+app.use(createSessionMiddleware());
+
+// Add user info to all requests
+app.use(addUserToLocals);
+
 const PORT = process.env.PORT || 3000
 const MONGO_URL = process.env.MONGO_URL
-
-async function main() {
-    await mongoose.connect(MONGO_URL)
-    console.log("MongoDB connected")
-
-
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`)
-    })
-}
-
-main().catch(err => console.log(err));
 
 // logger middleware
 app.use((req, res, next) => {
@@ -52,9 +56,20 @@ app.use('/assets', express.static('assets', {
 }));
 
 // Use routers
+app.use('/auth', authRoutes);
 app.use('/', pageRoutes);
 app.use('/api', apiRoutes);
 app.use('/', contactRoutes);
+
+async function main() {
+    await connectDB(MONGO_URL);
+
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`)
+    })
+}
+
+main().catch(err => console.log(err));
 
 // 404 handler - must be last
 app.use((req, res) => {

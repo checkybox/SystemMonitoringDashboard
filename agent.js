@@ -26,6 +26,7 @@ const execAsync = promisify(exec);
 // Configuration
 const DASHBOARD_URL = process.env.DASHBOARD_URL || 'https://systemmonitoringdashboard-d1bh.onrender.com/';
 const PUSH_INTERVAL = parseInt(process.env.PUSH_INTERVAL || '1') * 1000; // Convert to milliseconds
+const REGISTRATION_CODE = process.env.REGISTRATION_CODE || 'RRD6BJ8I'; // User's unique registration code
 
 // Helper function to normalize OS type
 function normalizeOSType(osType) {
@@ -165,6 +166,7 @@ async function collectMetrics() {
         os_type: normalizeOSType(os.type()),
         release: os.release(),
         cpuModel: os.cpus()[0]?.model || 'Unknown',
+        registrationCode: REGISTRATION_CODE || undefined, // Add registration code if provided
     };
 }
 
@@ -225,6 +227,7 @@ async function main() {
     console.log(`Dashboard URL: ${DASHBOARD_URL}`);
     console.log(`Push Interval: ${PUSH_INTERVAL / 1000} seconds`);
     console.log(`Machine: ${os.userInfo().username}@${os.hostname()}`);
+    console.log(`Registration Code: ${REGISTRATION_CODE ? REGISTRATION_CODE : 'Not provided (agent will be unlinked)'}`);
     console.log('='.repeat(60));
     console.log('');
 
