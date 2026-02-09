@@ -4,6 +4,17 @@ function getServerIdFromUrl() {
     return urlParams.get('server_id');
 }
 
+// Global state for polling and deltas
+const intervalIds = [];
+let previousCpuStats = null;
+let previousNetworkStats = null;
+let lastNetworkStatsTime = null;
+
+function clearAllIntervals() {
+    intervalIds.forEach(id => clearInterval(id));
+    intervalIds.length = 0;
+}
+
 // Function for regular users to select a server from dropdown
 async function selectServer() {
     const select = document.getElementById('server-select');
@@ -245,6 +256,16 @@ async function loadCpuPerCore() {
         const serverId = getServerIdFromUrl();
         const url = serverId ? `/api/cpu-per-core?server_id=${serverId}` : '/api/cpu-per-core';
         const res = await fetch(url);
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            if (error.hosted || error.requiresSelection) {
+                await showWaitingForAgents();
+                return;
+            }
+            throw new Error(error.error || 'Failed to load CPU stats');
+        }
+
         const currentStats = await res.json();
 
         if (previousCpuStats) {
@@ -421,6 +442,16 @@ async function loadNetworkStats() {
         const serverId = getServerIdFromUrl();
         const url = serverId ? `/api/network-stats?server_id=${serverId}` : '/api/network-stats';
         const res = await fetch(url);
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => ({}));
+            if (error.hosted || error.requiresSelection) {
+                await showWaitingForAgents();
+                return;
+            }
+            throw new Error(error.error || 'Failed to load network stats');
+        }
+
         const currentStats = await res.json();
         const currentTime = Date.now();
 
